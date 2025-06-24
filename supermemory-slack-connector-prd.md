@@ -1,0 +1,87 @@
+
+# Slack Connector for Supermemory – Product Requirements Document (PRD)
+
+_Last updated: June 24, 2025_
+
+---
+
+## 1. Problem / Opportunity
+Supermemory currently offers inbound “Simple Connectors” (Notion, Google Drive, OneDrive) but **no Slack integration**, despite listing it as “coming soon.”  
+Users spend hours in Slack; being able to seamlessly capture conversations into Supermemory would increase daily stickiness, drive paid conversions, and reduce knowledge loss.
+
+## 2. Goals & KPIs
+
+| Goal | Key Metric |
+|------|------------|
+| Enable any workspace to sync selected Slack channels/DMs to Supermemory in **≤ 5 minutes** | **Time‑to‑first‑sync ≤ 5 min** |
+| Preserve full message fidelity (text, threads, files, links) | **≥ 95 % ingest success** |
+| Keep storage costs predictable | Configurable per‑channel/user limits |
+
+## 3. Non‑Goals
+- Building a full Slack chatbot that replies inside Slack.  
+- Advanced moderation or PII redaction (future phase).
+
+## 4. User Stories
+1. **Knowledge worker**  
+   *“I want #engineering messages searchable in ChatGPT via Supermemory.”*
+2. **Startup CTO**  
+   *“I need an affordable backup of Slack knowledge without paying Slack Enterprise archival fees.”*
+
+## 5. Functional Requirements
+1. **OAuth 2.0 Install Flow** – 3‑legged Slack OAuth.
+2. **Granular Scopes** – `channels:history`, `groups:history`, `im:history`, `files:read`.
+3. **Event Intake**  
+   - **Real‑time** via Slack Events API or Socket Mode.  
+   - **Historical Backfill** (cursor pagination).
+4. **Transformation → Supermemory**  
+   - Map each Slack message to `POST /v3/memories` with metadata (author, ts, channel, thread_ts, file URLs).  
+   - Tag with `provider=slack`.
+5. **Dashboard Controls** (MVP CLI or simple Next.js admin)  
+   - List linked workspaces & channels.  
+   - Toggle sync, set `documentLimit`, delete connection.
+6. **Error Handling & Retries** – exponential back‑off on Slack rate limits (~50 req/min).
+7. **Security**  
+   - Verify `X‑Slack‑Signature`.  
+   - Encrypt & rotate access tokens.
+8. **Observability** – metrics for events received, memories created, lag seconds.
+
+## 6. Non‑functional Requirements
+
+| Attribute | Target |
+|-----------|--------|
+| **Latency** | ≤ 2 s average Slack event → searchable memory |
+| **Scalability** | 100 k messages/day per workspace |
+| **Hosting** | Cloudflare Worker + KV queue |
+| **Compliance** | GDPR delete events respected; token revocation supported |
+
+## 7. Success Metrics
+- **Adoption:** ≥ 25 workspaces in first 30 days  
+- **Churn:** < 5 % weekly disabled rate  
+- **Support tickets:** ≤ 5 per month related to Slack connector
+
+## 8. Timeline (Aggressive 7‑Day Sprint)
+
+| Day | Milestone |
+|-----|-----------|
+| 1 | Repo scaffold, Slack app manifest, local event test |
+| 2‑3 | OAuth + token storage, basic `/event` handler |
+| 4 | `POST /v3/memories` integration, unit tests |
+| 5 | Historical backfill script, channel picker UI |
+| 6 | Metrics & logging, docs draft |
+| 7 | Loom demo & PR to **supermemoryai/connectors** |
+
+## 9. Technical Feasibility Analysis
+
+| Factor | Assessment |
+|--------|------------|
+| **Supermemory v3 API** | Public REST endpoints (`/v3/memories`, etc.) are documented; server code need not be open‑sourced. |
+| **Provider Registration** | Even if `provider=slack` is not yet whitelisted, memories can be posted directly; UI support can follow once PR is accepted. |
+| **Slack Limits** | 50 req/min per bot token; batching & deferred file downloads mitigate hitting caps. |
+| **Hosting & Infra** | Single Cloudflare Worker with KV queue is sufficient. |
+| **Security** | Standard HMAC check (`X‑Slack‑Signature`) + Bearer token for Supermemory. |
+| **Complexities** | Private channels need admin install; large files handled via link‑only storage; thread message mapping strategy. |
+| **Developer Fit** | TypeScript + Workers matches contributor’s skill set. |
+
+**Verdict:** A focused developer can deliver an MVP in one week using only public APIs.
+
+---

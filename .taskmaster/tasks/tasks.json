@@ -1,0 +1,180 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Setup Project Repository and Scaffold",
+        "description": "Initialize the project repository with TypeScript configuration for Cloudflare Workers, set up the development environment, and create the basic project structure.",
+        "details": "1. Create a new repository in the supermemoryai organization\n2. Initialize with TypeScript configuration for Cloudflare Workers\n3. Set up package.json with dependencies:\n   - @slack/bolt\n   - @slack/web-api\n   - @cloudflare/workers-types\n4. Configure tsconfig.json for Workers environment\n5. Set up directory structure:\n   - src/\n     - handlers/\n     - utils/\n     - types/\n     - services/\n   - test/\n   - config/\n6. Create wrangler.toml for Cloudflare Worker configuration\n7. Set up GitHub Actions for CI/CD\n8. Add README.md with project overview and setup instructions",
+        "testStrategy": "Verify project structure is complete and all configurations are valid. Run `npm install` and ensure dependencies resolve correctly. Test local development server startup.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "Create Slack App Manifest and Registration",
+        "description": "Create the Slack app manifest, register the app with Slack, and configure the required OAuth scopes and event subscriptions.",
+        "details": "1. Create a Slack app manifest (app-manifest.yaml) with:\n   - App name: 'Supermemory Connector'\n   - Description: 'Sync Slack conversations to Supermemory'\n   - Required OAuth scopes: channels:history, groups:history, im:history, files:read\n   - Bot token scopes: channels:read, groups:read\n   - User token scopes: none\n2. Register app in Slack API dashboard\n3. Configure OAuth redirect URLs\n4. Set up event subscriptions endpoint URL (to be implemented later)\n5. Enable Socket Mode as an alternative to Events API\n6. Store app credentials securely in environment variables\n7. Document the app installation process",
+        "testStrategy": "Verify app registration is successful. Confirm all required scopes are properly configured. Test app manifest by creating a development version of the app.",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Implement OAuth 2.0 Flow",
+        "description": "Implement the 3-legged OAuth flow for Slack workspace authorization, including token storage and encryption in Cloudflare KV.",
+        "details": "1. Create OAuth handler endpoints:\n   - GET /auth/slack/start - Initiates OAuth flow\n   - GET /auth/slack/callback - Handles OAuth callback\n2. Implement token exchange using Slack Web API\n3. Store tokens securely in Cloudflare KV:\n   ```typescript\n   interface StoredToken {\n     accessToken: string;\n     teamId: string;\n     teamName: string;\n     userId: string;\n     scope: string;\n     expiresAt?: number;\n   }\n   ```\n4. Implement token encryption before storage\n5. Create token rotation mechanism\n6. Add token revocation handler for GDPR compliance\n7. Implement workspace connection status tracking",
+        "testStrategy": "Test OAuth flow with a test Slack workspace. Verify tokens are correctly stored and encrypted in KV. Test token retrieval and decryption. Validate token revocation process works correctly.",
+        "priority": "high",
+        "dependencies": [
+          1,
+          2
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "Implement Slack Event Handler",
+        "description": "Create the event handler for processing incoming Slack events, including signature verification and event routing.",
+        "details": "1. Create POST /slack/events endpoint\n2. Implement X-Slack-Signature verification:\n   ```typescript\n   function verifySlackRequest(request: Request, signingSecret: string): boolean {\n     const timestamp = request.headers.get('X-Slack-Request-Timestamp');\n     const signature = request.headers.get('X-Slack-Signature');\n     const body = await request.text();\n     \n     // Verify timestamp is within 5 minutes\n     if (Math.abs(Date.now()/1000 - parseInt(timestamp)) > 300) {\n       return false;\n     }\n     \n     const baseString = `v0:${timestamp}:${body}`;\n     const hmac = crypto.createHmac('sha256', signingSecret).update(baseString).digest('hex');\n     const computedSignature = `v0=${hmac}`;\n     \n     return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(computedSignature));\n   }\n   ```\n3. Implement event type routing (message, file_shared, etc.)\n4. Set up Socket Mode as alternative to Events API\n5. Implement rate limiting and queueing for event processing\n6. Add logging for event receipt and processing\n7. Implement error handling with appropriate status codes",
+        "testStrategy": "Test signature verification with valid and invalid signatures. Verify event routing works correctly for different event types. Test rate limiting behavior. Validate error handling for malformed requests.",
+        "priority": "high",
+        "dependencies": [
+          3
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Implement Message Transformation Service",
+        "description": "Create a service to transform Slack messages into the format required by Supermemory's API, preserving message fidelity and metadata.",
+        "details": "1. Create a transformation service with methods for different content types\n2. Implement message format conversion:\n   ```typescript\n   interface SlackMessage {\n     type: string;\n     user: string;\n     text: string;\n     ts: string;\n     thread_ts?: string;\n     channel: string;\n     files?: SlackFile[];\n   }\n   \n   interface SupermemoryPayload {\n     content: string;\n     metadata: {\n       provider: string;\n       author: string;\n       timestamp: string;\n       channel: string;\n       thread_id?: string;\n       file_urls?: string[];\n     };\n     tags: string[];\n   }\n   \n   function transformMessage(message: SlackMessage): SupermemoryPayload {\n     return {\n       content: message.text,\n       metadata: {\n         provider: 'slack',\n         author: message.user,\n         timestamp: message.ts,\n         channel: message.channel,\n         thread_id: message.thread_ts,\n         file_urls: message.files?.map(f => f.url_private) || []\n       },\n       tags: ['slack', `channel:${message.channel}`]\n     };\n   }\n   ```\n3. Handle special message types (rich text, code blocks, etc.)\n4. Implement thread message mapping\n5. Create file URL handling strategy\n6. Add user and channel name resolution",
+        "testStrategy": "Unit test transformation with various message types. Verify metadata is correctly preserved. Test with messages containing files, threads, and special formatting. Validate output matches Supermemory API requirements.",
+        "priority": "high",
+        "dependencies": [
+          4
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Integrate with Supermemory API",
+        "description": "Implement the service to send transformed Slack messages to Supermemory's API, handling authentication, rate limits, and error cases.",
+        "details": "1. Create a Supermemory API client service\n2. Implement POST /v3/memories endpoint integration:\n   ```typescript\n   async function postToSupermemory(payload: SupermemoryPayload, apiKey: string): Promise<Response> {\n     const response = await fetch('https://api.supermemory.ai/v3/memories', {\n       method: 'POST',\n       headers: {\n         'Content-Type': 'application/json',\n         'Authorization': `Bearer ${apiKey}`\n       },\n       body: JSON.stringify(payload)\n     });\n     \n     if (!response.ok) {\n       throw new Error(`Supermemory API error: ${response.status} ${await response.text()}`);\n     }\n     \n     return response;\n   }\n   ```\n3. Implement retry logic with exponential backoff\n4. Add batch processing for efficiency\n5. Implement error handling and logging\n6. Create metrics collection for success/failure rates\n7. Add configurable rate limiting to stay within API constraints",
+        "testStrategy": "Test API integration with mock responses. Verify retry logic works correctly. Test batch processing with various payload sizes. Validate error handling for different API response codes. Measure performance metrics.",
+        "priority": "high",
+        "dependencies": [
+          5
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Implement Historical Backfill",
+        "description": "Create a service to backfill historical Slack messages using cursor-based pagination, with configurable limits and progress tracking.",
+        "details": "1. Create a backfill service with configurable parameters\n2. Implement cursor-based pagination using Slack's conversations.history API:\n   ```typescript\n   async function backfillChannel(channelId: string, token: string, limit?: number): Promise<void> {\n     let cursor = undefined;\n     let count = 0;\n     const maxMessages = limit || Infinity;\n     \n     do {\n       const result = await slack.conversations.history({\n         channel: channelId,\n         cursor,\n         limit: 100\n       });\n       \n       for (const message of result.messages) {\n         await processMessage(message, channelId);\n         count++;\n         \n         if (count >= maxMessages) {\n           return;\n         }\n       }\n       \n       cursor = result.response_metadata?.next_cursor;\n     } while (cursor);\n   }\n   ```\n3. Add progress tracking and resumability\n4. Implement channel selection interface\n5. Add configurable document limits per channel\n6. Create throttling to respect Slack rate limits (~50 req/min)\n7. Implement thread retrieval for complete context",
+        "testStrategy": "Test backfill with various channel sizes. Verify pagination works correctly. Test with document limits. Validate rate limiting prevents API errors. Test progress tracking and resumability.",
+        "priority": "medium",
+        "dependencies": [
+          6
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "Develop Admin Dashboard UI",
+        "description": "Create a simple Next.js admin dashboard for managing Slack workspace connections, channel selection, and sync settings.",
+        "details": "1. Set up a Next.js project with TypeScript\n2. Create dashboard pages:\n   - Workspace overview\n   - Channel selection\n   - Sync settings\n   - Connection management\n3. Implement workspace connection status display\n4. Create channel selection interface with toggle controls\n5. Add document limit configuration per channel\n6. Implement connection deletion functionality\n7. Create simple metrics display\n8. Add authentication for dashboard access",
+        "testStrategy": "Test UI rendering on different devices. Verify all controls function correctly. Test authentication flow. Validate that settings changes are correctly persisted and applied.",
+        "priority": "medium",
+        "dependencies": [
+          3,
+          7
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Implement Observability and Metrics",
+        "description": "Set up comprehensive logging, metrics collection, and monitoring for the Slack connector to track performance and usage.",
+        "details": "1. Implement structured logging throughout the application\n2. Set up key metrics collection:\n   - Events received per workspace\n   - Memories created\n   - Latency (event receipt to memory creation)\n   - Error rates\n   - Rate limit hits\n3. Create a metrics dashboard\n4. Implement alerting for critical failures\n5. Add performance tracing\n6. Set up error aggregation\n7. Create usage reports for billing purposes",
+        "testStrategy": "Verify logs are correctly structured and contain necessary information. Test metrics collection under load. Validate alerting triggers correctly for error conditions. Test dashboard displays accurate information.",
+        "priority": "medium",
+        "dependencies": [
+          6,
+          7
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Implement Security and Compliance Features",
+        "description": "Enhance the connector with security features including token encryption, GDPR compliance, and secure handling of sensitive data.",
+        "details": "1. Implement token encryption and secure storage\n2. Create token rotation mechanism\n3. Add support for GDPR delete events:\n   ```typescript\n   async function handleUserDataDeleteRequest(userId: string): Promise<void> {\n     // Delete user tokens\n     await deleteUserTokens(userId);\n     \n     // Notify Supermemory of user data deletion\n     await fetch('https://api.supermemory.ai/v3/gdpr/delete', {\n       method: 'POST',\n       headers: {\n         'Content-Type': 'application/json',\n         'Authorization': `Bearer ${apiKey}`\n       },\n       body: JSON.stringify({\n         provider: 'slack',\n         userId: userId\n       })\n     });\n   }\n   ```\n4. Implement token revocation handling\n5. Add audit logging for security events\n6. Create data retention policies\n7. Implement secure error handling that doesn't leak sensitive information",
+        "testStrategy": "Test token encryption and decryption. Verify GDPR delete functionality works correctly. Test token revocation handling. Validate audit logs contain necessary information without sensitive data.",
+        "priority": "high",
+        "dependencies": [
+          3,
+          6
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 11,
+        "title": "Create Documentation and User Guide",
+        "description": "Develop comprehensive documentation for the Slack connector, including installation guide, API reference, and troubleshooting information.",
+        "details": "1. Create installation and setup guide\n2. Document OAuth flow and permissions\n3. Create API reference for all endpoints\n4. Write troubleshooting guide\n5. Document configuration options\n6. Create user guide for the admin dashboard\n7. Add code documentation and JSDoc comments\n8. Create a Loom demo video showing the complete setup process",
+        "testStrategy": "Review documentation for accuracy and completeness. Test installation following the guide on a fresh workspace. Validate API reference against actual implementation. Get feedback from test users on clarity.",
+        "priority": "medium",
+        "dependencies": [
+          8,
+          10
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 12,
+        "title": "Prepare PR to supermemoryai/connectors",
+        "description": "Finalize the connector implementation, create a pull request to the main repository, and prepare for review and integration.",
+        "details": "1. Ensure all tests pass\n2. Complete code documentation\n3. Verify all requirements are met\n4. Create a demo Loom video\n5. Prepare PR with detailed description\n6. Address code review feedback\n7. Coordinate with Supermemory team for provider registration\n8. Update documentation based on final implementation",
+        "testStrategy": "Run full test suite. Verify all functionality works in a production-like environment. Test with multiple workspaces. Validate against all requirements in the PRD.",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "status": "pending",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-06-24T09:59:07.307Z",
+      "updated": "2025-06-24T09:59:07.307Z",
+      "description": "Tasks for master context"
+    }
+  }
+}
