@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "backend-api-kit",
+  "main": "src/index.tsx",
+  "compatibility_date": "2025-01-21",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  "placement": {
+    "mode": "smart"
+  },
+  "d1_databases": [
+    {
+      "binding": "USERS_DATABASE",
+      "database_name": "backend-api-kit",
+      "database_id": "05a34dd0-b2df-40e1-9e3f-daec23f471d9",
+      "preview_database_id": "05a34dd0-b2df-40e1-9e3f-daec23f471d9"
+    }
+  ]
+}

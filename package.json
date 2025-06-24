@@ -1,0 +1,31 @@
+{
+  "name": "supermemory-slack-connector",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --minify",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "setup": "bun scripts/setup.ts",
+    "lint": "biome lint --write ."
+  },
+  "dependencies": {
+    "better-auth": "^1.2.10",
+    "drizzle-orm": "^0.44.2",
+    "hono": "^4.8.2",
+    "@slack/bolt": "^3.22.0",
+    "@slack/web-api": "^7.9.3"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.0.5",
+    "@clack/prompts": "^0.11.0",
+    "@cloudflare/vitest-pool-workers": "^0.8.44",
+    "@cloudflare/workers-types": "^4.20250121.0",
+    "@types/bun": "^1.2.0",
+    "better-sqlite3": "^12.1.0",
+    "child_process": "^1.0.2",
+    "drizzle-kit": "^0.31.2",
+    "vitest": "^3.2.4",
+    "wrangler": "^4.21.0",
+    "bun": "^1.2.0",
+    "dotenv": "^16.4.7"
+  }
+}
