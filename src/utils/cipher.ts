@@ -58,7 +58,10 @@ async function decrypt(encryptedData: string, key: string): Promise<string> {
 		const encrypted = combinedArray.slice(12);
 
 		// Hash the key to ensure it's exactly 16 bytes (128 bits)
-		const keyHash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key));
+		const keyHash = await crypto.subtle.digest(
+			"SHA-256",
+			new TextEncoder().encode(key),
+		);
 		const keyBytes = new Uint8Array(keyHash).slice(0, 16);
 
 		// Import the same key used for encryption

@@ -50,32 +50,44 @@ export class MessageTransformerService {
 
     let processedText = text;
 
-    // Convert user mentions from <@USER_ID> to @username format
+    // Convert user mentions
     processedText = processedText.replace(
       /<@([A-Z0-9]+)(\|([^>]+))?>/g,
-      (match, userId, pipe, username) => {
+      (_match, userId, _pipe, username) => {
         return username ? `@${username}` : `@${userId}`;
       }
     );
 
-    // Convert channel mentions from <#CHANNEL_ID> to #channel format
+    // Convert channel mentions
     processedText = processedText.replace(
       /<#([A-Z0-9]+)(\|([^>]+))?>/g,
-      (match, channelId, pipe, channelName) => {
+      (_match, channelId, _pipe, channelName) => {
         return channelName ? `#${channelName}` : `#${channelId}`;
       }
     );
 
-    // Convert URLs from <URL|text> to [text](URL) or just URL
-    processedText = processedText.replace(/<([^|>]+)\|([^>]+)>/g, "[$2]($1)");
-    processedText = processedText.replace(/<([^>]+)>/g, "$1");
+    // Convert URLs
+    processedText = processedText.replace(
+      /<(https?:\/\/[^>|]+)(\|([^>]+))?>/g,
+      (match, url, _pipe, linkText) => {
+        return linkText ? `[${linkText}](${url})` : url;
+      }
+    );
 
-    // Handle special formatting
-    processedText = processedText.replace(/```([^`]*)```/g, "```\n$1\n```"); // Code blocks
-    processedText = processedText.replace(/`([^`]+)`/g, "`$1`"); // Inline code
-    processedText = processedText.replace(/\*([^*]+)\*/g, "**$1**"); // Bold
-    processedText = processedText.replace(/_([^_]+)_/g, "*$1*"); // Italic
-    processedText = processedText.replace(/~([^~]+)~/g, "~~$1~~"); // Strikethrough
+    // Convert bold text
+    processedText = processedText.replace(/\*([^*]+)\*/g, "**$1**");
+
+    // Convert italic text
+    processedText = processedText.replace(/_([^_]+)_/g, "*$1*");
+
+    // Convert strikethrough
+    processedText = processedText.replace(/~([^~]+)~/g, "~~$1~~");
+
+    // Convert inline code
+    processedText = processedText.replace(/`([^`]+)`/g, "`$1`");
+
+    // Convert code blocks
+    processedText = processedText.replace(/```([^`]+)```/g, "```\n$1\n```");
 
     return processedText.trim();
   }

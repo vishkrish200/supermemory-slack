@@ -1,5 +1,6 @@
 interface Env {
   USERS_DATABASE: D1Database;
+  STATE_STORE?: KVNamespace; // For OAuth state management
   BETTER_AUTH_URL: string;
   SECRET: string;
   AUTH_GITHUB_ID: string;

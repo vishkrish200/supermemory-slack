@@ -1,17 +1,24 @@
+import { and, eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/d1";
 import { Hono } from "hono";
-import type { User, Session } from "../db/schema";
-import {
-  verifySlackSignature,
-  validateSlackEvent,
-  shouldProcessEvent,
-} from "./utils/signature";
+import type { Session, User } from "../db/schema";
+import * as schema from "../db/schema";
+import { decrypt, encrypt } from "../utils/cipher";
 import { SlackApiClient } from "./services/client";
 import { MessageTransformerService } from "./services/transformer";
 import type {
   SlackEvent,
   SlackEventPayload,
+  SlackOAuthResponse,
   SupermemoryPayload,
 } from "./types";
+import {
+  shouldProcessEvent,
+  validateSlackEvent,
+  verifySlackSignature,
+} from "./utils/signature";
+
+const db = (env: Env) => drizzle(env.USERS_DATABASE);
 
 export const slackRouter = new Hono<{
   Bindings: Env;
@@ -20,7 +27,7 @@ export const slackRouter = new Hono<{
     session: Session;
   };
 }>()
-  // Slack OAuth initiation
+  // Slack OAuth initiation - now integrates with better-auth session
   .get("/oauth/start", async (c) => {
     const { SLACK_CLIENT_ID, BETTER_AUTH_URL } = c.env;
 
@@ -28,6 +35,7 @@ export const slackRouter = new Hono<{
       return c.json({ error: "Slack client ID not configured" }, 500);
     }
 
+    // Generate and store state parameter for CSRF protection
     const state = crypto.randomUUID();
     const redirectUri = `${BETTER_AUTH_URL}/slack/oauth/callback`;
 
@@ -39,6 +47,7 @@ export const slackRouter = new Hono<{
       "channels:read",
       "groups:read",
       "users:read",
+      "team:read",
     ].join(",");
 
     const authUrl = new URL("https://slack.com/oauth/v2/authorize");
@@ -48,30 +57,41 @@ export const slackRouter = new Hono<{
     authUrl.searchParams.set("state", state);
     authUrl.searchParams.set("user_scope", "");
 
-    // Store state in session or KV for verification
-    // TODO: Implement state storage for security
+    // Store state in KV with TTL for security verification
+    // Using a 10-minute expiration for OAuth state
+    await c.env.STATE_STORE?.put(`oauth_state:${state}`, "valid", {
+      expirationTtl: 600,
+    });
 
     return c.redirect(authUrl.toString());
   })
 
-  // Slack OAuth callback
+  // Slack OAuth callback - now stores tokens in database
   .get("/oauth/callback", async (c) => {
     const code = c.req.query("code");
-    const _state = c.req.query("state");
+    const state = c.req.query("state");
     const error = c.req.query("error");
 
     if (error) {
       return c.json({ error: `OAuth error: ${error}` }, 400);
     }
 
-    if (!code) {
-      return c.json({ error: "Authorization code not provided" }, 400);
+    if (!code || !state) {
+      return c.json({ error: "Authorization code or state not provided" }, 400);
     }
 
-    // TODO: Verify state parameter for security
+    // Verify state parameter for CSRF protection
+    const storedState = await c.env.STATE_STORE?.get(`oauth_state:${state}`);
+    if (!storedState || storedState !== "valid") {
+      return c.json({ error: "Invalid or expired state parameter" }, 400);
+    }
+
+    // Clean up the state
+    await c.env.STATE_STORE?.delete(`oauth_state:${state}`);
 
     try {
-      const { SLACK_CLIENT_ID, SLACK_CLIENT_SECRET, BETTER_AUTH_URL } = c.env;
+      const { SLACK_CLIENT_ID, SLACK_CLIENT_SECRET, BETTER_AUTH_URL, SECRET } =
+        c.env;
       const redirectUri = `${BETTER_AUTH_URL}/slack/oauth/callback`;
 
       const slackClient = new SlackApiClient();
@@ -82,13 +102,14 @@ export const slackRouter = new Hono<{
         redirectUri
       );
 
-      // TODO: Store tokens securely in database with encryption
-      console.log("OAuth successful for team:", oauthResponse.team.name);
+      // Store team and token information in database
+      await storeSlackCredentials(oauthResponse, SECRET, c.env);
 
       return c.json({
         success: true,
         team: oauthResponse.team.name,
         message: "Slack workspace connected successfully!",
+        redirect: "/auth/slack/success",
       });
     } catch (error) {
       console.error("OAuth callback error:", error);
@@ -177,31 +198,168 @@ export const slackRouter = new Hono<{
 
   // Test endpoint for development
   .get("/test", async (c) => {
-    const { SLACK_BOT_TOKEN } = c.env;
-
-    if (!SLACK_BOT_TOKEN) {
-      return c.json({ error: "Bot token not configured" }, 500);
-    }
-
     try {
-      const slackClient = new SlackApiClient(SLACK_BOT_TOKEN);
+      const teams = await db(c.env)
+        .select()
+        .from(schema.slackTeam)
+        .where(eq(schema.slackTeam.isActive, true))
+        .limit(1);
+
+      if (teams.length === 0) {
+        return c.json({ error: "No active Slack teams found" }, 404);
+      }
+
+      const team = teams[0];
+      const tokens = await db(c.env)
+        .select()
+        .from(schema.slackToken)
+        .where(
+          and(
+            eq(schema.slackToken.teamId, team.id),
+            eq(schema.slackToken.isRevoked, false)
+          )
+        )
+        .limit(1);
+
+      if (tokens.length === 0) {
+        return c.json({ error: "No active tokens found for team" }, 404);
+      }
+
+      const token = tokens[0];
+      const decryptedToken = await decrypt(token.accessToken, c.env.SECRET);
+      const slackClient = new SlackApiClient(decryptedToken);
       const authTest = await slackClient.testAuth();
 
       return c.json({
         status: "authenticated",
         team: authTest.team,
         user: authTest.user,
+        teamName: team.name,
       });
     } catch (error) {
       return c.json(
         {
-          error: "Authentication failed",
+          error: "Authentication test failed",
           details: error instanceof Error ? error.message : "Unknown error",
         },
         500
       );
     }
   });
+
+/**
+ * Store Slack OAuth credentials in the database
+ */
+async function storeSlackCredentials(
+  oauthResponse: SlackOAuthResponse,
+  encryptionSecret: string,
+  env: Env
+): Promise<void> {
+  const dbClient = db(env);
+
+  try {
+    // Encrypt the access token before storing
+    const encryptedToken = await encrypt(
+      oauthResponse.access_token,
+      encryptionSecret
+    );
+
+    // Store or update team information
+    await dbClient
+      .insert(schema.slackTeam)
+      .values({
+        id: oauthResponse.team.id,
+        name: oauthResponse.team.name,
+        domain: null, // Domain not provided in OAuth response
+        enterpriseId: oauthResponse.enterprise?.id || null,
+        enterpriseName: oauthResponse.enterprise?.name || null,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: schema.slackTeam.id,
+        set: {
+          name: oauthResponse.team.name,
+          domain: null, // Domain not provided in OAuth response
+          isActive: true,
+          updatedAt: new Date(),
+        },
+      });
+
+    // Store the access token
+    await dbClient.insert(schema.slackToken).values({
+      id: crypto.randomUUID(),
+      teamId: oauthResponse.team.id,
+      slackUserId: oauthResponse.authed_user.id,
+      accessToken: encryptedToken,
+      tokenType: oauthResponse.token_type || "bearer",
+      scope: oauthResponse.scope,
+      botUserId: oauthResponse.bot_user_id || null,
+      appId: oauthResponse.app_id,
+      isRevoked: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    console.log(`Stored credentials for team: ${oauthResponse.team.name}`);
+  } catch (error) {
+    console.error("Error storing Slack credentials:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get team's access token from database
+ */
+async function getTeamAccessToken(
+  teamId: string,
+  env: Env
+): Promise<string | null> {
+  try {
+    const tokens = await db(env)
+      .select()
+      .from(schema.slackToken)
+      .where(
+        and(
+          eq(schema.slackToken.teamId, teamId),
+          eq(schema.slackToken.isRevoked, false)
+        )
+      )
+      .limit(1);
+
+    if (tokens.length === 0) {
+      return null;
+    }
+
+    const token = tokens[0];
+    return await decrypt(token.accessToken, env.SECRET);
+  } catch (error) {
+    console.error("Error retrieving team access token:", error);
+    return null;
+  }
+}
+
+/**
+ * Get team information from database
+ */
+async function getTeamInfo(
+  teamId: string,
+  env: Env
+): Promise<{ name: string } | null> {
+  try {
+    const teams = await db(env)
+      .select()
+      .from(schema.slackTeam)
+      .where(eq(schema.slackTeam.id, teamId))
+      .limit(1);
+
+    return teams.length > 0 ? { name: teams[0].name } : null;
+  } catch (error) {
+    console.error("Error retrieving team info:", error);
+    return null;
+  }
+}
 
 /**
  * Process Slack events asynchronously
@@ -211,8 +369,8 @@ async function processSlackEvent(payload: SlackEvent, env: Env): Promise<void> {
     const event = payload.event;
     const teamId = payload.team_id;
 
-    // TODO: Get team's access token from database
-    const accessToken = env.SLACK_BOT_TOKEN; // Temporary fallback
+    // Get team's access token from database
+    const accessToken = await getTeamAccessToken(teamId, env);
 
     if (!accessToken) {
       console.error("No access token available for team:", teamId);
@@ -258,11 +416,12 @@ async function handleMessageEvent(
 ): Promise<void> {
   try {
     // Get additional context
-    const [channelInfo, userInfo] = await Promise.all([
+    const [channelInfo, userInfo, teamInfo] = await Promise.all([
       event.channel
         ? slackClient.getChannel(event.channel).catch(() => null)
         : null,
       event.user ? slackClient.getUser(event.user).catch(() => null) : null,
+      getTeamInfo(teamId, env),
     ]);
 
     // Transform the message
@@ -274,7 +433,7 @@ async function handleMessageEvent(
         user: string;
       },
       teamId,
-      undefined, // Team name - TODO: get from database
+      teamInfo?.name,
       channelInfo?.name,
       userInfo?.real_name || userInfo?.name
     );
@@ -293,10 +452,10 @@ async function handleMessageEvent(
  */
 async function handleFileSharedEvent(
   event: SlackEventPayload,
-  teamId: string,
-  slackClient: SlackApiClient,
-  transformer: MessageTransformerService,
-  env: Env
+  _teamId: string,
+  _slackClient: SlackApiClient,
+  _transformer: MessageTransformerService,
+  _env: Env
 ): Promise<void> {
   // TODO: Implement file handling
   console.log("File shared event received:", event);

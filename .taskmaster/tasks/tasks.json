@@ -35,7 +35,7 @@
             "id": 3,
             "title": "Adapt Existing Structure for Slack Connector",
             "description": "Modify the existing project structure to accommodate Slack connector specific needs.",
-            "status": "in-progress",
+            "status": "done",
             "dependencies": [
               2
             ],
@@ -283,6 +283,51 @@
             "details": "Conduct code reviews, implement automated tests, and ensure all endpoints and storage mechanisms meet modern security standards.",
             "status": "pending",
             "testStrategy": ""
+          },
+          {
+            "id": 8,
+            "title": "Implement OAuth State Storage for Security",
+            "description": "Implement secure state parameter storage and verification for OAuth 2.0 flow to prevent CSRF attacks.",
+            "details": "Add state parameter generation, storage (likely in KV with TTL), and verification during OAuth callback. This addresses the TODO: 'Implement state storage for security' in the OAuth start handler.",
+            "status": "pending",
+            "dependencies": [
+              1
+            ],
+            "parentTaskId": 3
+          },
+          {
+            "id": 9,
+            "title": "Implement OAuth State Verification in Callback",
+            "description": "Add state parameter verification in the OAuth callback handler to ensure the callback matches the original request.",
+            "details": "Verify the state parameter returned by Slack matches the one we stored during OAuth initiation. This addresses the TODO: 'Verify state parameter for security' in the OAuth callback handler.",
+            "status": "pending",
+            "dependencies": [
+              8
+            ],
+            "parentTaskId": 3
+          },
+          {
+            "id": 10,
+            "title": "Implement Secure Token Storage in Database",
+            "description": "Replace the current TODO with actual implementation to store Slack OAuth tokens securely in the database with encryption.",
+            "details": "Implement the logic to store tokens in the slackToken table using the existing database schema. Ensure tokens are encrypted before storage using the encryption utilities. This addresses the TODO: 'Store tokens securely in database with encryption' in the OAuth callback.",
+            "status": "pending",
+            "dependencies": [
+              3,
+              9
+            ],
+            "parentTaskId": 3
+          },
+          {
+            "id": 11,
+            "title": "Implement Token Retrieval from Database",
+            "description": "Implement functionality to retrieve and decrypt team access tokens from the database for API calls.",
+            "details": "Replace the TODO comments with actual database queries to retrieve team tokens from the slackToken table. Ensure proper decryption and error handling. This addresses the TODOs: 'Get team's access token from database' and 'get from database' found in the event handlers.",
+            "status": "pending",
+            "dependencies": [
+              10
+            ],
+            "parentTaskId": 3
           }
         ]
       },
@@ -454,6 +499,17 @@
             "details": "Integrate with Slack API endpoints (users.info, conversations.info) to resolve IDs. Implement caching to minimize API calls and latency. Ensure resolution logic is robust against deleted or unknown users/channels. Provide fallbacks for unresolved entities.",
             "status": "pending",
             "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Implement File Attachment Handling",
+            "description": "Implement handling for Slack file events and attachments in messages, including downloading and processing files.",
+            "details": "Replace the TODO with actual implementation for handling file_shared events and file attachments in messages. This includes downloading files from Slack, processing different file types, and sending them to Supermemory. This addresses the TODO: 'Implement file handling' in the event handler.",
+            "status": "pending",
+            "dependencies": [
+              5
+            ],
+            "parentTaskId": 5
           }
         ]
       },
@@ -1151,7 +1207,7 @@
     ],
     "metadata": {
       "created": "2025-06-24T09:59:07.307Z",
-      "updated": "2025-06-24T10:22:45.769Z",
+      "updated": "2025-06-24T10:32:38.168Z",
       "description": "Tasks for master context"
     }
   }

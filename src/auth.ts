@@ -1,12 +1,12 @@
 import { betterAuth } from "better-auth";
-import type { User, Session } from "./db/schema";
-import { drizzle } from "drizzle-orm/d1";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import * as schema from "./db/schema";
-import { createMiddleware } from "hono/factory";
-import { Hono } from "hono";
-import { generateKey, decryptKey } from "./utils/key";
 import { eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/d1";
+import { Hono } from "hono";
+import { createMiddleware } from "hono/factory";
+import type { Session, User } from "./db/schema";
+import * as schema from "./db/schema";
+import { decryptKey, generateKey } from "./utils/key";
 
 const app = new Hono<{
 	Bindings: Env;
@@ -36,6 +36,21 @@ export const auth = (env: Env) =>
 				clientSecret: env.AUTH_GITHUB_SECRET,
 				redirectURI: `${env.BETTER_AUTH_URL}/api/auth/callback/github`,
 			},
+			slack: {
+				clientId: env.SLACK_CLIENT_ID,
+				clientSecret: env.SLACK_CLIENT_SECRET,
+				redirectURI: `${env.BETTER_AUTH_URL}/api/auth/callback/slack`,
+				scope: [
+					"channels:history",
+					"groups:history",
+					"im:history",
+					"files:read",
+					"channels:read",
+					"groups:read",
+					"users:read",
+					"team:read",
+				].join(" "),
+			},
 		},
 	});
 
@@ -45,7 +60,10 @@ export const authMiddleware = createMiddleware(async (c, next) => {
 	if (authHeader?.startsWith("Bearer ")) {
 		const token = authHeader.substring(7);
 		try {
-			const [userId, lastKeyGeneratedAtTimestamp] = await decryptKey(token, c.env.SECRET);
+			const [userId, lastKeyGeneratedAtTimestamp] = await decryptKey(
+				token,
+				c.env.SECRET,
+			);
 			const user = await db(c.env)
 				.select()
 				.from(schema.user)
@@ -96,7 +114,10 @@ export const authMiddleware = createMiddleware(async (c, next) => {
 			.where(eq(schema.user.id, session.user.id))
 			.get();
 
-		if (user && (!user.lastKeyGeneratedAt || user.lastKeyGeneratedAt === null)) {
+		if (
+			user &&
+			(!user.lastKeyGeneratedAt || user.lastKeyGeneratedAt === null)
+		) {
 			// Update user with current timestamp if no lastKeyGeneratedAt
 			const now = new Date();
 			await db(c.env)
@@ -138,6 +159,31 @@ export const authRouter = app
 
 		return c.redirect(signinUrl.url);
 	})
+	.get("/auth/slack", async (c) => {
+		const signinUrl = await auth(c.env).api.signInSocial({
+			body: {
+				provider: "slack",
+				callbackURL: "/auth/slack/success",
+			},
+		});
+
+		if (!signinUrl || !signinUrl.url) {
+			return c.text("Failed to initiate Slack OAuth", 500);
+		}
+
+		return c.redirect(signinUrl.url);
+	})
+	.get("/auth/slack/success", async (c) => {
+		const session = await auth(c.env).api.getSession({
+			headers: c.req.raw.headers,
+		});
+
+		if (session?.user) {
+			return c.redirect("/dashboard?connected=true");
+		}
+
+		return c.redirect("/auth/slack?error=authentication_failed");
+	})
 	.post("/api/auth/token", async (c) => {
 		const user = c.get("user");
 		if (!user) {
@@ -145,7 +191,11 @@ export const authRouter = app
 		}
 
 		const lastKeyGeneratedAt = Date.now();
-		const token = await generateKey(user.id, String(lastKeyGeneratedAt), c.env.SECRET);
+		const token = await generateKey(
+			user.id,
+			String(lastKeyGeneratedAt),
+			c.env.SECRET,
+		);
 
 		return c.json({ token });
 	});
