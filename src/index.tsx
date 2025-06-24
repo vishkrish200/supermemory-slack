@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { authMiddleware, authRouter } from "./auth";
 import type { User, Session } from "./db/schema";
 import { apiRouter } from "./api";
+import { slackRouter } from "./slack";
 
 const app = new Hono<{
   Bindings: Env;
@@ -15,6 +16,8 @@ const app = new Hono<{
   .route("/auth", authRouter)
   // api routes
   .route("/api", apiRouter)
+  // slack integration routes
+  .route("/slack", slackRouter)
   // health check endpoint
   .get("/", async (c) => {
     return c.json({
@@ -22,15 +25,6 @@ const app = new Hono<{
       service: "supermemory-slack-connector",
       version: "1.0.0",
     });
-  })
-  // Slack webhook endpoints will be added here
-  .post("/slack/events", async (c) => {
-    // TODO: Implement Slack event handler
-    return c.json({ message: "Slack events endpoint - coming soon" });
-  })
-  .get("/slack/oauth", async (c) => {
-    // TODO: Implement Slack OAuth handler
-    return c.json({ message: "Slack OAuth endpoint - coming soon" });
   });
 
 export default app;
