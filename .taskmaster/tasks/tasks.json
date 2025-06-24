@@ -4,94 +4,110 @@
       {
         "id": 1,
         "title": "Setup Project Repository and Scaffold",
-        "description": "Initialize the project repository with TypeScript configuration for Cloudflare Workers, set up the development environment, and create the basic project structure.",
-        "details": "1. Create a new repository in the supermemoryai organization\n2. Initialize with TypeScript configuration for Cloudflare Workers\n3. Set up package.json with dependencies:\n   - @slack/bolt\n   - @slack/web-api\n   - @cloudflare/workers-types\n4. Configure tsconfig.json for Workers environment\n5. Set up directory structure:\n   - src/\n     - handlers/\n     - utils/\n     - types/\n     - services/\n   - test/\n   - config/\n6. Create wrangler.toml for Cloudflare Worker configuration\n7. Set up GitHub Actions for CI/CD\n8. Add README.md with project overview and setup instructions",
-        "testStrategy": "Verify project structure is complete and all configurations are valid. Run `npm install` and ensure dependencies resolve correctly. Test local development server startup.",
-        "priority": "high",
-        "dependencies": [],
+        "description": "Initialize the project repository by cloning and adapting the Supermemory backend-api-kit template, which provides a production-ready foundation with TypeScript configuration for Cloudflare Workers.",
         "status": "pending",
+        "dependencies": [],
+        "priority": "high",
+        "details": "1. Clone the supermemoryai/backend-api-kit template repository\n2. Remove unnecessary features (LemonSqueezy payments, landing page)\n3. Adapt the existing structure for Slack connector specific needs\n4. Keep the authentication system for OAuth 2.0 flow\n5. Utilize the database setup (Drizzle + D1) for token storage\n6. Leverage the rate limiting for Slack API integration\n7. Add additional dependencies:\n   - @slack/bolt\n   - @slack/web-api\n8. Update directory structure as needed for Slack-specific components\n9. Update wrangler.toml for Slack connector configuration\n10. Update GitHub Actions for CI/CD if needed\n11. Update README.md with project-specific overview and setup instructions",
+        "testStrategy": "Verify project structure is complete and all configurations are valid. Run `npm install` and ensure dependencies resolve correctly. Test local development server startup. Confirm that unnecessary features have been removed and Slack-specific components are properly integrated.",
         "subtasks": [
           {
             "id": 1,
-            "title": "Initialize Git Repository and Project Directory",
-            "description": "Create a new project directory and initialize a Git repository to enable version control from the start.",
-            "dependencies": [],
-            "details": "Use 'git init' in the project directory. Optionally, create a remote repository on GitHub or another platform and add it as the origin. Ensure a .gitignore file is present to exclude node_modules and build artifacts.",
+            "title": "Clone the backend-api-kit Template Repository",
+            "description": "Clone the supermemoryai/backend-api-kit template repository instead of starting from scratch.",
             "status": "pending",
-            "testStrategy": ""
+            "dependencies": [],
+            "details": "Clone the repository using 'git clone https://github.com/supermemoryai/backend-api-kit.git slack-connector'. Rename the remote to 'template' and create a new repository in the supermemoryai organization for the Slack connector. Add this new repository as the 'origin' remote.",
+            "testStrategy": "Verify that the repository has been successfully cloned and that the remote repositories are correctly configured."
           },
           {
             "id": 2,
-            "title": "Set Up Cloudflare Worker Project with TypeScript",
-            "description": "Use the Cloudflare CLI (C3) to scaffold a new Worker project configured for TypeScript.",
+            "title": "Remove Unnecessary Features",
+            "description": "Remove LemonSqueezy payments, landing page, and other features not needed for the Slack connector.",
+            "status": "pending",
             "dependencies": [
               1
             ],
-            "details": "Run the C3 CLI to create a new Worker project. Choose TypeScript as the language and opt in to using git for version control if prompted. Confirm the project structure includes src/index.ts and a basic wrangler configuration file.",
-            "status": "pending",
-            "testStrategy": ""
+            "details": "Identify and remove code related to LemonSqueezy payments, landing page, and any other features not required for the Slack connector. Update configuration files and dependencies accordingly.",
+            "testStrategy": "Ensure that the removed features don't break the application. Run tests to verify that the core functionality still works."
           },
           {
             "id": 3,
-            "title": "Configure TypeScript for Cloudflare Workers",
-            "description": "Ensure TypeScript is properly configured for Cloudflare Workers development.",
+            "title": "Adapt Existing Structure for Slack Connector",
+            "description": "Modify the existing project structure to accommodate Slack connector specific needs.",
+            "status": "pending",
             "dependencies": [
               2
             ],
-            "details": "Verify or create a tsconfig.json tailored for Workers, ensuring correct target, module, and type definitions. Confirm type definitions for Cloudflare Workers are included.",
-            "status": "pending",
-            "testStrategy": ""
+            "details": "Create or update directories for Slack-specific components. Modify existing files to support Slack integration. Update imports and references as needed.",
+            "testStrategy": "Verify that the project structure is organized logically for Slack connector development. Ensure that all imports and references are working correctly."
           },
           {
             "id": 4,
-            "title": "Install and Configure Project Dependencies",
-            "description": "Install all required dependencies for TypeScript, Cloudflare Workers, and Slack API integration.",
+            "title": "Configure OAuth 2.0 Flow Using Existing Authentication System",
+            "description": "Adapt the existing better-auth authentication system for Slack OAuth 2.0 flow.",
+            "status": "pending",
             "dependencies": [
               3
             ],
-            "details": "Run 'npm install' to install dependencies such as wrangler, typescript, and any Slack SDKs or HTTP libraries needed. Add devDependencies for linting, formatting, and testing as appropriate.",
-            "status": "pending",
-            "testStrategy": ""
+            "details": "Review the existing authentication system and adapt it for Slack OAuth 2.0 flow. Update authentication handlers, middleware, and related components as needed.",
+            "testStrategy": "Test the OAuth 2.0 flow to ensure it correctly handles Slack authentication. Verify that tokens are properly exchanged and stored."
           },
           {
             "id": 5,
-            "title": "Establish Directory Structure and Boilerplate Code",
-            "description": "Organize the project directory for clarity and scalability, and add initial boilerplate code.",
+            "title": "Set Up Token Storage Using Drizzle and D1",
+            "description": "Configure the existing database setup to store Slack tokens and related data.",
+            "status": "pending",
             "dependencies": [
               4
             ],
-            "details": "Create directories such as src/, test/, and config/. Add a basic src/index.ts with a 'Hello World' Worker handler. Ensure test scaffolding is present if using a test framework.",
-            "status": "pending",
-            "testStrategy": ""
+            "details": "Create or modify database schemas for storing Slack tokens and related data. Update database migrations and seed data if necessary. Implement token storage and retrieval functions.",
+            "testStrategy": "Test database operations for storing and retrieving Slack tokens. Verify that tokens are properly encrypted and securely stored."
           },
           {
             "id": 6,
-            "title": "Configure wrangler.toml for Cloudflare Deployment",
-            "description": "Set up wrangler.toml with necessary configuration for deploying to Cloudflare Workers.",
+            "title": "Implement Rate Limiting for Slack API Integration",
+            "description": "Configure rate limiting for Slack API integration using the existing rate limiting system.",
+            "status": "pending",
             "dependencies": [
               5
             ],
-            "details": "Add your Cloudflare account_id, project name, and any environment variables (such as Slack tokens) to wrangler.toml. Configure KV namespaces or other bindings if needed.",
-            "status": "pending",
-            "testStrategy": ""
+            "details": "Review the existing rate limiting system and configure it for Slack API integration. Set appropriate rate limits based on Slack API requirements and expected usage patterns.",
+            "testStrategy": "Test rate limiting functionality to ensure it correctly throttles requests to the Slack API. Verify that rate limit errors are properly handled."
           },
           {
             "id": 7,
-            "title": "Set Up CI/CD Pipeline",
-            "description": "Configure continuous integration and deployment workflows for automated testing and deployment.",
-            "dependencies": [],
-            "details": "Create CI/CD configuration files (e.g., GitHub Actions, GitLab CI) to run tests, lint code, and deploy to Cloudflare Workers on push or PR. Ensure secrets are securely managed.",
+            "title": "Install Slack-Specific Dependencies",
+            "description": "Add Slack-specific dependencies to the project.",
             "status": "pending",
-            "testStrategy": ""
+            "dependencies": [
+              3
+            ],
+            "details": "Run 'npm install @slack/bolt @slack/web-api' to add Slack-specific dependencies. Update package.json and lock files accordingly.",
+            "testStrategy": "Verify that Slack dependencies are correctly installed and can be imported in the project."
           },
           {
             "id": 8,
-            "title": "Write Project Documentation",
-            "description": "Document setup, configuration, and usage instructions for the repository.",
-            "dependencies": [],
-            "details": "Create a README.md with sections for project overview, setup instructions, development workflow, deployment, and contribution guidelines. Document any environment variables and configuration steps.",
+            "title": "Update wrangler.toml for Slack Connector Configuration",
+            "description": "Update wrangler.toml with necessary configuration for the Slack connector.",
             "status": "pending",
-            "testStrategy": ""
+            "dependencies": [
+              6,
+              7
+            ],
+            "details": "Update wrangler.toml with Slack-specific environment variables and configuration. Configure KV namespaces, D1 database, and other bindings as needed.",
+            "testStrategy": "Verify that wrangler.toml is correctly configured for the Slack connector. Test local development and deployment to ensure configuration is working."
+          },
+          {
+            "id": 9,
+            "title": "Update Project Documentation",
+            "description": "Update README.md and other documentation with project-specific information.",
+            "status": "pending",
+            "dependencies": [
+              8
+            ],
+            "details": "Update README.md with project overview, setup instructions, development workflow, and deployment instructions specific to the Slack connector. Document environment variables, configuration steps, and usage examples.",
+            "testStrategy": "Review documentation for accuracy and completeness. Ensure that setup instructions work as described."
           }
         ]
       },
