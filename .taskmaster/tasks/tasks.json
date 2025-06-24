@@ -10,7 +10,90 @@
         "priority": "high",
         "dependencies": [],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Initialize Git Repository and Project Directory",
+            "description": "Create a new project directory and initialize a Git repository to enable version control from the start.",
+            "dependencies": [],
+            "details": "Use 'git init' in the project directory. Optionally, create a remote repository on GitHub or another platform and add it as the origin. Ensure a .gitignore file is present to exclude node_modules and build artifacts.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Set Up Cloudflare Worker Project with TypeScript",
+            "description": "Use the Cloudflare CLI (C3) to scaffold a new Worker project configured for TypeScript.",
+            "dependencies": [
+              1
+            ],
+            "details": "Run the C3 CLI to create a new Worker project. Choose TypeScript as the language and opt in to using git for version control if prompted. Confirm the project structure includes src/index.ts and a basic wrangler configuration file.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Configure TypeScript for Cloudflare Workers",
+            "description": "Ensure TypeScript is properly configured for Cloudflare Workers development.",
+            "dependencies": [
+              2
+            ],
+            "details": "Verify or create a tsconfig.json tailored for Workers, ensuring correct target, module, and type definitions. Confirm type definitions for Cloudflare Workers are included.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Install and Configure Project Dependencies",
+            "description": "Install all required dependencies for TypeScript, Cloudflare Workers, and Slack API integration.",
+            "dependencies": [
+              3
+            ],
+            "details": "Run 'npm install' to install dependencies such as wrangler, typescript, and any Slack SDKs or HTTP libraries needed. Add devDependencies for linting, formatting, and testing as appropriate.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Establish Directory Structure and Boilerplate Code",
+            "description": "Organize the project directory for clarity and scalability, and add initial boilerplate code.",
+            "dependencies": [
+              4
+            ],
+            "details": "Create directories such as src/, test/, and config/. Add a basic src/index.ts with a 'Hello World' Worker handler. Ensure test scaffolding is present if using a test framework.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Configure wrangler.toml for Cloudflare Deployment",
+            "description": "Set up wrangler.toml with necessary configuration for deploying to Cloudflare Workers.",
+            "dependencies": [
+              5
+            ],
+            "details": "Add your Cloudflare account_id, project name, and any environment variables (such as Slack tokens) to wrangler.toml. Configure KV namespaces or other bindings if needed.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Set Up CI/CD Pipeline",
+            "description": "Configure continuous integration and deployment workflows for automated testing and deployment.",
+            "dependencies": [],
+            "details": "Create CI/CD configuration files (e.g., GitHub Actions, GitLab CI) to run tests, lint code, and deploy to Cloudflare Workers on push or PR. Ensure secrets are securely managed.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 8,
+            "title": "Write Project Documentation",
+            "description": "Document setup, configuration, and usage instructions for the repository.",
+            "dependencies": [],
+            "details": "Create a README.md with sections for project overview, setup instructions, development workflow, deployment, and contribution guidelines. Document any environment variables and configuration steps.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
       },
       {
         "id": 2,
@@ -23,7 +106,81 @@
           1
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Draft Slack App Manifest",
+            "description": "Create a manifest YAML/JSON file specifying the app name, description, features (e.g., bot, incoming webhooks, slash commands), and initial OAuth scopes required for the integration.",
+            "dependencies": [],
+            "details": "Follow Slack's manifest schema and include placeholders for URLs that will be set after Cloudflare Worker deployment. Ensure the manifest is version-controlled for reproducibility.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Register Slack App Using Manifest",
+            "description": "Register the Slack app in the Slack API dashboard using the manifest created in the previous step.",
+            "dependencies": [
+              1
+            ],
+            "details": "Navigate to api.slack.com/apps, select 'Create New App', and import the manifest. Confirm that the app is created with the correct features and placeholders.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Configure OAuth Scopes and Redirect URLs",
+            "description": "Define and assign the minimum required OAuth scopes for the app’s functionality and set up the OAuth redirect URLs to point to the Cloudflare Worker endpoint.",
+            "dependencies": [
+              2
+            ],
+            "details": "Review Slack API documentation for required scopes (e.g., chat:write, commands, incoming-webhook). Add the Cloudflare Worker URL as the OAuth redirect URI in the app settings.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Set Up Event Subscriptions",
+            "description": "Enable and configure event subscriptions for the Slack app, specifying the Cloudflare Worker endpoint as the Request URL and selecting relevant event types.",
+            "dependencies": [
+              3
+            ],
+            "details": "In the Slack app dashboard, enable event subscriptions, set the Worker URL as the Request URL, and subscribe to events (e.g., message.channels, app_mention) needed for your bot’s logic.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Configure Socket Mode (Optional)",
+            "description": "If using Socket Mode instead of HTTP endpoints, enable Socket Mode in the Slack app settings and generate an app-level token.",
+            "dependencies": [
+              4
+            ],
+            "details": "Determine if Socket Mode is required for your use case. If so, enable it, generate the token, and update your Worker code to use the Slack WebSocket API.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Implement Secure Credential Storage",
+            "description": "Store Slack app credentials (client ID, client secret, signing secret, tokens) securely using Cloudflare Workers Secrets or environment variables.",
+            "dependencies": [
+              5
+            ],
+            "details": "Use wrangler secrets or environment variables to avoid hardcoding sensitive information. Document the process for updating and rotating secrets.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Write Installation and Usage Documentation",
+            "description": "Document the installation process, including manifest import, app registration, OAuth flow, event subscription setup, credential management, and testing.",
+            "dependencies": [],
+            "details": "Provide step-by-step instructions with screenshots or code snippets. Include troubleshooting tips and best practices for TypeScript and Cloudflare Workers integration.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
       },
       {
         "id": 3,
@@ -37,7 +194,81 @@
           2
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design and Implement OAuth 2.0 Endpoint Handlers",
+            "description": "Create Cloudflare Worker endpoints for OAuth 2.0 flows, including authorization, token issuance, and revocation, following Slack API and OAuth best practices.",
+            "dependencies": [],
+            "details": "Endpoints should support the Authorization Code Flow with PKCE, handle redirect URIs, and validate client credentials. Use TypeScript for type safety and clarity.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement Token Exchange Logic",
+            "description": "Develop logic to securely exchange authorization codes for access and refresh tokens, ensuring compliance with Slack's OAuth requirements.",
+            "dependencies": [
+              1
+            ],
+            "details": "Validate authorization codes, generate JWTs or opaque tokens, and return tokens in a secure response. Ensure proper error handling and logging.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Establish Secure Token Storage and Encryption",
+            "description": "Set up secure storage for tokens using Cloudflare KV or Durable Objects, and implement encryption for sensitive data at rest.",
+            "dependencies": [
+              2
+            ],
+            "details": "Encrypt tokens before storage using modern cryptographic libraries. Ensure access controls and audit logging for storage operations.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Develop Token Rotation Mechanisms",
+            "description": "Implement automatic and manual token rotation processes to replace expiring or compromised tokens without service interruption.",
+            "dependencies": [
+              3
+            ],
+            "details": "Support refresh token flows, generate new access tokens, and update stored tokens atomically. Notify connected workspaces of token changes if required.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Implement Token Revocation Functionality",
+            "description": "Create endpoints and logic to allow users or admins to revoke access and refresh tokens, ensuring immediate invalidation.",
+            "dependencies": [
+              4
+            ],
+            "details": "Update storage to mark tokens as revoked, prevent further use, and propagate revocation to Slack and any connected services as needed.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Track Workspace Connections and Token Associations",
+            "description": "Build a system to track which Slack workspaces are connected, their associated tokens, and relevant metadata for auditing and management.",
+            "dependencies": [
+              5
+            ],
+            "details": "Maintain a mapping of workspace IDs to token records, connection timestamps, and status. Provide query endpoints for admins.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Integrate Security Best Practices and Compliance Checks",
+            "description": "Review and enhance all components for security, including input validation, rate limiting, and compliance with OAuth 2.0 and Slack guidelines.",
+            "dependencies": [],
+            "details": "Conduct code reviews, implement automated tests, and ensure all endpoints and storage mechanisms meet modern security standards.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
       },
       {
         "id": 4,
@@ -50,7 +281,87 @@
           3
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create and Configure API Endpoint in Cloudflare Worker",
+            "description": "Set up the main HTTP endpoint using Cloudflare Workers, ensuring it can receive and respond to external requests. Define the entry point and basic routing structure in TypeScript.",
+            "dependencies": [],
+            "details": "Use Cloudflare Workers' fetch handler to process incoming requests. Configure routes as needed for Slack event handling. Ensure endpoint is accessible and responds to basic health checks.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement Slack Signature Verification Middleware",
+            "description": "Develop middleware to verify Slack request signatures for authenticity and security before processing events.",
+            "dependencies": [
+              1
+            ],
+            "details": "Extract and validate the 'X-Slack-Signature' and 'X-Slack-Request-Timestamp' headers. Use HMAC SHA256 with the Slack signing secret. Reject requests with invalid or missing signatures.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Design Event Routing Logic",
+            "description": "Route incoming Slack events to appropriate handlers based on event type and payload.",
+            "dependencies": [
+              2
+            ],
+            "details": "Parse the request body, identify the event type, and dispatch to specific handler functions. Support extensibility for new event types. Ensure type safety with TypeScript interfaces.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Add Socket Mode Support for Slack Events",
+            "description": "Integrate support for Slack Socket Mode to receive events via WebSockets as an alternative to HTTP endpoints.",
+            "dependencies": [
+              3
+            ],
+            "details": "Implement a Socket Mode client using Slack's APIs. Manage WebSocket connections, authenticate using app tokens, and route events similarly to HTTP events.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Implement Rate Limiting Middleware",
+            "description": "Add rate limiting to protect the endpoint from abuse and ensure compliance with Slack and Cloudflare best practices.",
+            "dependencies": [
+              1
+            ],
+            "details": "Use Cloudflare KV or Durable Objects to track request counts per IP or Slack team. Respond with 429 status when limits are exceeded. Make rate limits configurable.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Integrate Structured Logging",
+            "description": "Add structured logging for all incoming requests, responses, errors, and key events for observability and debugging.",
+            "dependencies": [
+              1
+            ],
+            "details": "Use a consistent log format (e.g., JSON). Log request metadata, event types, verification results, and error details. Ensure logs do not leak sensitive information.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Centralize and Standardize Error Handling",
+            "description": "Implement a unified error handling mechanism to catch, log, and respond to errors gracefully.",
+            "dependencies": [
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "details": "Catch exceptions in all middleware and handlers. Return appropriate HTTP status codes and error messages. Ensure errors are logged with context for troubleshooting.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
       },
       {
         "id": 5,
@@ -63,7 +374,72 @@
           4
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Service Creation and Cloudflare Worker Setup",
+            "description": "Establish the foundational Cloudflare Worker service, configure the project with TypeScript, and set up secure environment variables for Slack API credentials.",
+            "dependencies": [],
+            "details": "Initialize a new Cloudflare Worker project using modern tooling (e.g., wrangler, TypeScript). Configure environment variables for Slack tokens and webhook URLs. Ensure secure storage and access of secrets. Set up basic routing and request handling structure.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Format Conversion Logic",
+            "description": "Implement robust message transformation logic to convert between Slack's message format and the internal representation, preserving all relevant metadata.",
+            "dependencies": [
+              1
+            ],
+            "details": "Design TypeScript interfaces for Slack messages and internal message objects. Map fields such as text, attachments, blocks, timestamps, and user/channel references. Handle edge cases like threaded messages, ephemeral messages, and rich formatting. Ensure lossless conversion where possible.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Special Message Handling",
+            "description": "Develop handlers for special Slack message types, including attachments, blocks, ephemeral messages, and interactive elements.",
+            "dependencies": [
+              2
+            ],
+            "details": "Identify all Slack message subtypes (e.g., bot messages, file shares, interactive actions). Implement logic to correctly process and transform each subtype, ensuring that metadata and user experience are preserved. Write unit tests for each special case.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Thread Mapping and Conversation Context",
+            "description": "Implement logic to accurately map Slack threads and maintain conversation context during message transformation and delivery.",
+            "dependencies": [
+              2
+            ],
+            "details": "Parse and preserve thread_ts and parent_ts fields. Ensure that replies are correctly associated with their parent messages. Handle edge cases such as missing or malformed thread references. Test with nested and multi-level threads.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "File URL and Attachment Handling",
+            "description": "Implement secure and reliable handling of file URLs and attachments, ensuring proper access, transformation, and delivery.",
+            "dependencies": [
+              3
+            ],
+            "details": "Detect file attachments in Slack messages. Retrieve file metadata and URLs, handling authentication as needed. Transform file references for downstream consumers, ensuring privacy and access control. Support various file types (images, docs, etc.).",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "User and Channel Resolution",
+            "description": "Develop utilities to resolve Slack user and channel IDs to human-readable names and vice versa, supporting message fidelity and context.",
+            "dependencies": [
+              2
+            ],
+            "details": "Integrate with Slack API endpoints (users.info, conversations.info) to resolve IDs. Implement caching to minimize API calls and latency. Ensure resolution logic is robust against deleted or unknown users/channels. Provide fallbacks for unresolved entities.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
       },
       {
         "id": 6,
@@ -76,7 +452,81 @@
           5
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set Up TypeScript Project and Cloudflare Worker Environment",
+            "description": "Initialize a TypeScript project with Cloudflare Workers using Wrangler, ensuring compatibility with modern best practices and secure configuration.",
+            "dependencies": [],
+            "details": "Create a new project directory, initialize with Wrangler, configure TypeScript, and set up environment variables and secrets for secure API credentials storage.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Develop API Client Abstraction",
+            "description": "Implement a reusable API client in TypeScript for interacting with the Slack API, supporting authentication and request customization.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create a class or module that wraps fetch calls, injects authentication headers using Wrangler secrets, and provides methods for common Slack API operations.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Integrate Endpoint Methods",
+            "description": "Add specific endpoint integration methods to the API client for Slack operations (e.g., sending messages, retrieving user info).",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement strongly-typed methods for each required Slack API endpoint, ensuring correct request/response typing and parameter validation.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Implement Retry Logic for API Requests",
+            "description": "Add robust retry logic to the API client to handle transient errors and rate limits, following Slack and Cloudflare best practices.",
+            "dependencies": [
+              3
+            ],
+            "details": "Incorporate exponential backoff and jitter for retries, handle HTTP 429 and 5xx errors, and respect Slack's rate limit headers.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Add Batch Processing Capabilities",
+            "description": "Enable the API client to process requests in batches where supported, optimizing throughput and minimizing API calls.",
+            "dependencies": [
+              4
+            ],
+            "details": "Implement batching logic for endpoints that support it, queue requests, and process them in configurable batch sizes with concurrency controls.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Integrate Comprehensive Error Handling",
+            "description": "Enhance the API client and Worker logic with structured error handling, logging, and user-friendly error reporting.",
+            "dependencies": [
+              5
+            ],
+            "details": "Standardize error types, log errors with context, and ensure that all failures are handled gracefully with actionable messages.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Implement Metrics Collection and Rate Limiting",
+            "description": "Add metrics collection for API usage and performance, and enforce rate limiting to comply with Slack and Cloudflare guidelines.",
+            "dependencies": [],
+            "details": "Track request counts, error rates, latency, and implement in-memory or KV-based rate limiting to prevent exceeding API quotas.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
       },
       {
         "id": 7,
@@ -89,7 +539,81 @@
           6
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design Backfill Service Architecture",
+            "description": "Define the overall architecture for the backfill service, including how it will interact with Cloudflare Workers, Slack API, and storage for progress tracking. Specify use of Durable Objects for state management and resumability.",
+            "dependencies": [],
+            "details": "Document the flow for triggering backfills, handling retries, and storing progress. Ensure the design supports scalability and error recovery.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement Channel Selection Logic",
+            "description": "Develop functionality to select Slack channels for backfill, supporting both manual selection and automated discovery of eligible channels.",
+            "dependencies": [
+              1
+            ],
+            "details": "Integrate with Slack API to list channels, filter based on criteria (e.g., public/private, membership), and allow user or config-driven selection.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Develop Pagination and Thread Retrieval",
+            "description": "Implement paginated retrieval of messages and threads from Slack channels, ensuring efficient traversal of large histories.",
+            "dependencies": [
+              2
+            ],
+            "details": "Use Slack API's pagination mechanisms (e.g., cursors) and handle edge cases such as empty pages or API errors. Support fetching thread replies as part of the backfill.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Enforce Document and Message Limits",
+            "description": "Add logic to respect configurable limits on the number of documents or messages processed per channel or per backfill run.",
+            "dependencies": [
+              3
+            ],
+            "details": "Implement checks to stop processing when limits are reached, and ensure limits are configurable via environment variables or API parameters.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Implement Throttling and Rate Limiting",
+            "description": "Integrate throttling to respect Slack API rate limits and avoid overloading Cloudflare Workers. Implement exponential backoff and retry strategies.",
+            "dependencies": [
+              4
+            ],
+            "details": "Monitor API responses for rate limit signals, queue requests as needed, and use Durable Objects or Queues for distributed throttling if required.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Build Progress Tracking and Resumability",
+            "description": "Create mechanisms to track backfill progress, persist state, and support resuming interrupted or partial backfills.",
+            "dependencies": [
+              5
+            ],
+            "details": "Store progress in Durable Objects or KV, including last processed message IDs, channel state, and error logs. Expose APIs to query and resume progress.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Integrate with Cloudflare Workers and Deploy",
+            "description": "Integrate all components into a Cloudflare Worker, ensure TypeScript best practices, and deploy using Wrangler. Set up environment variables and secrets for Slack API and progress storage.",
+            "dependencies": [],
+            "details": "Test end-to-end flow, validate error handling, and document deployment steps. Ensure secure handling of credentials and robust logging.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
       },
       {
         "id": 8,
@@ -103,7 +627,98 @@
           7
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Initialize Next.js Project with TypeScript and UI Libraries",
+            "description": "Set up a new Next.js project using TypeScript and install necessary UI libraries (e.g., Tailwind CSS, Material-UI, Shadcn) for dashboard development.",
+            "dependencies": [],
+            "details": "Run `npx create-next-app@latest --typescript` to scaffold the project. Install UI libraries and configure TypeScript settings for best practices.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Configure Project Structure and Layout Components",
+            "description": "Organize the project directory and create reusable layout components such as Sidebar, Header, and Main Dashboard layout.",
+            "dependencies": [
+              1
+            ],
+            "details": "Follow modern dashboard structure conventions. Implement layout wrappers to ensure consistent UI across pages.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement Authentication with Modern Best Practices",
+            "description": "Integrate authentication using a secure provider (e.g., NextAuth.js) and configure protected routes for the admin dashboard.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Set up authentication logic, session management, and route guards to restrict access to authenticated users only.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Create Core Dashboard Pages and Routing",
+            "description": "Develop main dashboard pages (status display, channel selection, document limit config, connection deletion, metrics display) and set up Next.js routing.",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Use Next.js App Router or Pages Router to define routes. Scaffold each page with placeholder content and connect to layout components.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Integrate Slack API and Cloudflare Workers Backend",
+            "description": "Set up backend endpoints using Cloudflare Workers for Slack API integration, handling channel selection, connection management, and document limits.",
+            "dependencies": [
+              4
+            ],
+            "details": "Develop TypeScript-based API routes or edge functions. Ensure secure handling of Slack tokens and environment variables.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Implement Status Display and Metrics Visualization",
+            "description": "Build frontend components to display system status and visualize metrics using charts or tables, fetching data from backend endpoints.",
+            "dependencies": [
+              4,
+              5
+            ],
+            "details": "Use chart libraries (e.g., Chart.js, Recharts) and ensure real-time or periodic data updates from backend APIs.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Develop Interactive Channel Selection and Document Limit Configuration",
+            "description": "Create UI components for selecting Slack channels and configuring document limits, with backend integration for persistence.",
+            "dependencies": [
+              5
+            ],
+            "details": "Implement dropdowns, forms, and validation. Connect UI actions to backend endpoints for updating settings.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 8,
+            "title": "Implement Connection Deletion and Admin Actions",
+            "description": "Add functionality for deleting Slack connections and performing other admin actions, ensuring proper confirmation and error handling.",
+            "dependencies": [
+              5,
+              7
+            ],
+            "details": "Develop UI controls (e.g., buttons, modals) and backend logic for safe deletion and feedback to the user.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
       },
       {
         "id": 9,
@@ -117,7 +732,86 @@
           7
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Structured Logging in Cloudflare Workers",
+            "description": "Set up structured logging for Cloudflare Workers using best practices for log formatting, context enrichment, and log levels. Ensure logs are compatible with Cloudflare Workers Logs and can be forwarded via Logpush or Tail Workers.",
+            "dependencies": [],
+            "details": "Define a consistent log schema (e.g., JSON), include relevant metadata (request IDs, user info), and integrate with Cloudflare's Workers Logs. Configure log sampling and environment-specific settings as needed.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Integrate Metrics Collection",
+            "description": "Instrument Cloudflare Workers to collect custom and built-in metrics, such as request counts, latency, error rates, and custom business metrics.",
+            "dependencies": [
+              1
+            ],
+            "details": "Use Cloudflare Workers Observability features to emit metrics. Ensure metrics are tagged with relevant dimensions (e.g., endpoint, status code). Consider using the Query Builder for extracting metrics from logs if needed.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Create Observability Dashboards",
+            "description": "Build dashboards in the Cloudflare Dashboard to visualize logs and metrics for all Workers, enabling real-time and historical analysis.",
+            "dependencies": [
+              2
+            ],
+            "details": "Leverage the Workers Metrics Dashboard and Query Builder to create visualizations for key metrics and log events. Save and organize queries for ongoing monitoring.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Configure Alerting for Key Events",
+            "description": "Set up alerting rules based on log patterns and metric thresholds to notify stakeholders of anomalies, errors, or performance regressions.",
+            "dependencies": [
+              3
+            ],
+            "details": "Define alert conditions (e.g., high error rate, latency spikes) and integrate with notification channels such as Slack using the Slack API. Ensure alerts are actionable and minimize noise.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Implement Performance Tracing",
+            "description": "Add tracing capabilities to Cloudflare Workers to capture request flows, latency breakdowns, and bottlenecks.",
+            "dependencies": [
+              1
+            ],
+            "details": "Instrument Workers to emit trace events and spans. Use Cloudflare's observability tools or integrate with third-party tracing systems if needed. Ensure trace context is propagated across requests.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Aggregate and Analyze Errors",
+            "description": "Set up error aggregation to group, analyze, and prioritize errors captured in logs and metrics.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Use Workers Logs and Query Builder to identify recurring errors, group by error type or source, and track error trends over time. Integrate with alerting for critical errors.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Develop Usage Reporting and Slack Integration",
+            "description": "Generate periodic usage reports (e.g., daily/weekly) summarizing key metrics, errors, and usage patterns, and deliver them to stakeholders via Slack.",
+            "dependencies": [
+              2,
+              6,
+              4
+            ],
+            "details": "Automate report generation using TypeScript, format reports for readability, and use the Slack API to send reports to designated channels. Ensure reports provide actionable insights.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
       },
       {
         "id": 10,
@@ -131,7 +825,91 @@
           6
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Token Encryption and Storage",
+            "description": "Design and implement secure token encryption using the Web Crypto API (AES-GCM) and store encrypted tokens in Cloudflare Workers KV. Ensure encryption keys are managed securely using Cloudflare Secrets Store.",
+            "dependencies": [],
+            "details": "Use the 'encrypt-workers-kv' library for encryption and decryption. Store encryption keys as secrets using Cloudflare's Secrets Store, leveraging a two-level key hierarchy for enhanced security. Ensure tokens are encrypted before storage and decrypted only when needed by authorized Workers.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Design and Implement Token Rotation Mechanism",
+            "description": "Develop a process for periodic and on-demand token rotation, ensuring minimal downtime and secure key management.",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement logic to generate new tokens and encryption keys, update stored tokens, and retire old tokens. Ensure backward compatibility during rotation and automate key rotation using Cloudflare's planned periodic key rotation features.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Integrate GDPR Delete Support",
+            "description": "Implement workflows to support GDPR-compliant deletion of tokens and associated user data upon request.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create endpoints and background jobs to securely delete encrypted tokens and all related data from Workers KV and any other storage. Ensure deletions are logged and irreversible, and provide confirmation to requesting users.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Develop Token Revocation Handling",
+            "description": "Create mechanisms to revoke tokens immediately and prevent their further use, including integration with Slack API for notification if required.",
+            "dependencies": [
+              1
+            ],
+            "details": "Maintain a revocation list or status flag in encrypted storage. Ensure revoked tokens are checked on every authentication attempt. Optionally, notify relevant parties via Slack integration when a token is revoked.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Implement Comprehensive Audit Logging",
+            "description": "Design and implement secure, immutable audit logging for all token-related operations, including creation, rotation, deletion, and revocation.",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "details": "Log all sensitive operations with timestamps, user identifiers, and operation details. Store logs in a secure, append-only format, and ensure logs themselves are encrypted and access-controlled.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Establish Data Retention Policies and Enforcement",
+            "description": "Define and enforce data retention policies for tokens and audit logs, ensuring compliance with legal and organizational requirements.",
+            "dependencies": [
+              5
+            ],
+            "details": "Implement automated processes to purge expired tokens and logs after the retention period. Ensure retention logic is configurable and auditable.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Implement Secure Error Handling and Reporting",
+            "description": "Develop robust error handling that avoids leaking sensitive information and integrates with Slack API for critical alerts.",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "details": "Ensure all errors are logged securely without exposing secrets or sensitive data. Provide user-friendly error messages and send critical security alerts to Slack channels using secure, rate-limited integrations.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
       },
       {
         "id": 11,
@@ -145,7 +923,108 @@
           10
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Draft Installation Guide",
+            "description": "Create a step-by-step installation guide for setting up the project, including prerequisites, environment setup, and deployment using Cloudflare Workers and Wrangler.",
+            "dependencies": [],
+            "details": "Include instructions for installing Node.js, Wrangler CLI, cloning the repository, configuring environment variables, and deploying the Worker. Reference Cloudflare Workers best practices for deployment.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Write OAuth Integration Documentation",
+            "description": "Document the OAuth flow for Slack API integration, covering app registration, permissions, redirect URIs, and token management.",
+            "dependencies": [
+              1
+            ],
+            "details": "Provide clear steps for registering a Slack app, configuring OAuth scopes, setting up redirect URLs, and securely storing tokens. Include troubleshooting for common OAuth issues.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Develop API Reference",
+            "description": "Create a comprehensive API reference for all endpoints, request/response formats, authentication, and error codes.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Document each API endpoint with method, path, parameters, expected responses, and example requests. Highlight authentication requirements and error handling conventions.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Prepare Troubleshooting Guide",
+            "description": "Compile a troubleshooting guide addressing common installation, configuration, and runtime issues.",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "List frequent problems (e.g., deployment errors, OAuth failures, API misconfigurations) and provide actionable solutions or diagnostic steps. Reference Cloudflare Workers and Slack API error messages.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Document Configuration Options",
+            "description": "Detail all configuration options, including Wrangler and Worker settings, environment variables, and Slack integration parameters.",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "Explain each configuration parameter, its purpose, valid values, and examples. Emphasize best practices for managing configuration via Wrangler and environment variables.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Create Admin Dashboard Guide",
+            "description": "Write a user guide for the admin dashboard, covering navigation, features, and management tasks.",
+            "dependencies": [
+              1,
+              5
+            ],
+            "details": "Describe dashboard layout, user roles, settings management, and monitoring features. Include annotated screenshots and usage scenarios.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Generate Code Documentation",
+            "description": "Produce in-depth code documentation using TypeScript doc comments and external documentation tools.",
+            "dependencies": [
+              1,
+              2,
+              3,
+              5
+            ],
+            "details": "Annotate TypeScript code with JSDoc/TSDoc comments, generate HTML/Markdown docs, and ensure codebase is self-explanatory. Cover module structure, interfaces, and integration points.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 8,
+            "title": "Record Demo Video",
+            "description": "Create a demo video showcasing installation, configuration, OAuth setup, API usage, and dashboard features.",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6
+            ],
+            "details": "Script and record a walkthrough demonstrating key workflows, highlighting best practices and troubleshooting tips. Ensure video is concise and accessible to new users.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
       },
       {
         "id": 12,
@@ -168,7 +1047,90 @@
           11
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Verify Automated and Manual Tests",
+            "description": "Run all automated unit, integration, and end-to-end tests for the Cloudflare Worker and Slack API integration. Manually test edge cases and error handling, ensuring local bindings and environment variables are correctly simulated using Wrangler or Vite.",
+            "dependencies": [],
+            "details": "Use `wrangler dev` or Vite plugin for local simulation of bindings. Confirm all test cases pass and document any manual test results for future reference.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Check Requirements Compliance",
+            "description": "Review the implementation against the original requirements and acceptance criteria. Ensure all specified features, error handling, and security considerations are addressed.",
+            "dependencies": [
+              1
+            ],
+            "details": "Cross-reference the code and documentation with the requirements document. Note any discrepancies and prepare a checklist for missing or incomplete items.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Update and Polish Code Documentation",
+            "description": "Ensure all TypeScript code is fully documented with JSDoc comments, clear type annotations, and inline explanations for complex logic. Update or create README files as needed.",
+            "dependencies": [
+              2
+            ],
+            "details": "Follow best practices for TypeScript documentation. Include usage examples, configuration instructions, and API references in the README.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Prepare Demo Video",
+            "description": "Record a concise demo video showcasing the main features, setup process, and integration flow between Cloudflare Workers and Slack. Highlight key scenarios and successful test runs.",
+            "dependencies": [
+              3
+            ],
+            "details": "Use screen recording tools to capture the local development environment, test execution, and Slack interactions. Narrate or annotate the video for clarity.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Provider Registration and Configuration",
+            "description": "Register the provider (e.g., Slack app) with the necessary credentials and permissions. Configure environment variables and bindings for both local and production environments.",
+            "dependencies": [
+              4
+            ],
+            "details": "Follow Slack API and Cloudflare Workers best practices for secure credential management. Document the registration and configuration steps for future maintainers.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Update Project Documentation",
+            "description": "Revise and expand project-level documentation to reflect recent changes, including setup instructions, environment configuration, and troubleshooting tips.",
+            "dependencies": [
+              5
+            ],
+            "details": "Ensure documentation covers both local development (using Wrangler/Vite) and deployment steps. Include a changelog summarizing recent updates.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Prepare Pull Request (PR)",
+            "description": "Draft a detailed PR description summarizing the changes, referencing requirements, test results, and demo materials. Ensure all code is linted and formatted according to project standards.",
+            "dependencies": [],
+            "details": "Attach the demo video, link to updated documentation, and include a checklist of completed tasks. Tag relevant reviewers and provide context for the review.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 8,
+            "title": "Respond to Code Review Feedback",
+            "description": "Address reviewer comments on the PR, making code or documentation changes as needed. Communicate clarifications and update the PR description if significant changes are made.",
+            "dependencies": [],
+            "details": "Track all feedback, resolve discussions, and ensure all requested changes are implemented before merging.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
       }
     ],
     "metadata": {
