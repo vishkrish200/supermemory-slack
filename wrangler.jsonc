@@ -26,6 +26,29 @@
     }
   ],
   "vars": {
-    "BETTER_AUTH_URL": "http://localhost:8787"
+    // Authentication & Core
+    "BETTER_AUTH_URL": "http://localhost:8787",
+
+    // Supermemory API Configuration
+    "SUPERMEMORY_API_URL": "https://api.supermemory.ai",
+
+    // Environment-specific settings
+    "NODE_ENV": "development"
+  },
+
+  // Runtime configuration for development/production
+  "env": {
+    "production": {
+      "vars": {
+        "BETTER_AUTH_URL": "https://slack.supermemory.ai",
+        "NODE_ENV": "production"
+      }
+    },
+    "staging": {
+      "vars": {
+        "BETTER_AUTH_URL": "https://slack-staging.supermemory.ai",
+        "NODE_ENV": "staging"
+      }
+    }
   }
 }

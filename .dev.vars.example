@@ -1,5 +1,18 @@
+# Better Auth Configuration
 AUTH_GITHUB_ID=
 AUTH_GITHUB_SECRET=
 BETTER_AUTH_URL=http://localhost:8787
-SECRET=
-LEMONSQUEEZY_CHECKOUT_LINK=
+SECRET=your-encryption-secret-key-here
+
+# Slack App Configuration
+SLACK_CLIENT_ID=your-slack-client-id
+SLACK_CLIENT_SECRET=your-slack-client-secret
+SLACK_SIGNING_SECRET=your-slack-signing-secret
+
+# Optional: Slack tokens for testing (usually obtained via OAuth)
+SLACK_BOT_TOKEN=xoxb-your-bot-token
+SLACK_USER_TOKEN=xoxp-your-user-token
+
+# Supermemory API Configuration
+SUPERMEMORY_API_URL=https://api.supermemory.ai
+SUPERMEMORY_API_KEY=your-supermemory-api-key
