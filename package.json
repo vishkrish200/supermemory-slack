@@ -1,69 +1,69 @@
 {
-  "name": "supermemory-slack-connector",
-  "version": "0.1.0",
-  "description": "Production-ready Slack connector for Supermemory - seamlessly sync conversations with intelligent knowledge management",
-  "main": "src/index.tsx",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/supermemoryai/slack-connector.git"
-  },
-  "keywords": [
-    "slack",
-    "supermemory",
-    "connector",
-    "cloudflare-workers",
-    "oauth",
-    "knowledge-management",
-    "typescript"
-  ],
-  "author": "Supermemory <team@supermemory.ai>",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/supermemoryai/slack-connector/issues"
-  },
-  "homepage": "https://github.com/supermemoryai/slack-connector#readme",
-  "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy --minify",
-    "deploy:staging": "wrangler deploy --env staging --minify",
-    "deploy:prod": "wrangler deploy --env production --minify",
-    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
-    "setup": "bun scripts/setup.ts",
-    "setup:deployment": "bun scripts/setup-deployment.ts",
-    "manifest:generate": "node scripts/generate-manifest.js",
-    "drizzle:generate": "drizzle-kit generate",
-    "drizzle:migrate": "wrangler d1 migrations apply supermemory-slack --local",
-    "drizzle:migrate:prod": "wrangler d1 migrations apply supermemory-slack --remote",
-    "lint": "biome lint --write .",
-    "lint:check": "biome check .",
-    "type-check": "tsc --noEmit",
-    "test": "vitest",
-    "test:watch": "vitest --watch",
-    "test:coverage": "vitest --coverage",
-    "validate": "npm run type-check && npm run lint:check && npm test",
-    "tail": "wrangler tail",
-    "tail:staging": "wrangler tail --env staging",
-    "tail:prod": "wrangler tail --env production"
-  },
-  "dependencies": {
-    "better-auth": "^1.2.10",
-    "drizzle-orm": "^0.44.2",
-    "hono": "^4.8.2",
-    "@slack/bolt": "^3.22.0",
-    "@slack/web-api": "^7.9.3"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^2.0.5",
-    "@clack/prompts": "^0.11.0",
-    "@cloudflare/vitest-pool-workers": "^0.8.44",
-    "@cloudflare/workers-types": "^4.20250121.0",
-    "@types/bun": "^1.2.0",
-    "better-sqlite3": "^12.1.0",
-    "child_process": "^1.0.2",
-    "drizzle-kit": "^0.31.2",
-    "vitest": "^3.2.4",
-    "wrangler": "^4.21.0",
-    "bun": "^1.2.0",
-    "dotenv": "^16.4.7"
-  }
+	"name": "supermemory-slack-connector",
+	"version": "0.1.0",
+	"description": "Production-ready Slack connector for Supermemory - seamlessly sync conversations with intelligent knowledge management",
+	"main": "src/index.tsx",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/supermemoryai/slack-connector.git"
+	},
+	"keywords": [
+		"slack",
+		"supermemory",
+		"connector",
+		"cloudflare-workers",
+		"oauth",
+		"knowledge-management",
+		"typescript"
+	],
+	"author": "Supermemory <team@supermemory.ai>",
+	"license": "MIT",
+	"bugs": {
+		"url": "https://github.com/supermemoryai/slack-connector/issues"
+	},
+	"homepage": "https://github.com/supermemoryai/slack-connector#readme",
+	"scripts": {
+		"dev": "wrangler dev",
+		"deploy": "wrangler deploy --minify",
+		"deploy:staging": "wrangler deploy --env staging --minify",
+		"deploy:prod": "wrangler deploy --env production --minify",
+		"cf-typegen": "wrangler types --env-interface CloudflareBindings",
+		"setup": "bun scripts/setup.ts",
+		"setup:deployment": "bun scripts/setup-deployment.ts",
+		"manifest:generate": "node scripts/generate-manifest.js",
+		"drizzle:generate": "drizzle-kit generate",
+		"drizzle:migrate": "wrangler d1 migrations apply supermemory-slack --local",
+		"drizzle:migrate:prod": "wrangler d1 migrations apply supermemory-slack --remote",
+		"lint": "biome lint --write .",
+		"lint:check": "biome check .",
+		"type-check": "tsc --noEmit",
+		"test": "vitest",
+		"test:watch": "vitest --watch",
+		"test:coverage": "vitest --coverage",
+		"validate": "npm run type-check && npm run lint:check && npm test",
+		"tail": "wrangler tail",
+		"tail:staging": "wrangler tail --env staging",
+		"tail:prod": "wrangler tail --env production"
+	},
+	"dependencies": {
+		"better-auth": "^1.2.10",
+		"drizzle-orm": "^0.44.2",
+		"hono": "^4.8.2",
+		"@slack/bolt": "^3.22.0",
+		"@slack/web-api": "^7.9.3"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.0.5",
+		"@clack/prompts": "^0.11.0",
+		"@cloudflare/vitest-pool-workers": "^0.8.44",
+		"@cloudflare/workers-types": "^4.20250121.0",
+		"@types/bun": "^1.2.0",
+		"better-sqlite3": "^12.1.0",
+		"child_process": "^1.0.2",
+		"drizzle-kit": "^0.31.2",
+		"vitest": "^3.2.4",
+		"wrangler": "^4.21.0",
+		"bun": "^1.2.0",
+		"dotenv": "^16.4.7"
+	}
 }

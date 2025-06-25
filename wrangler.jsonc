@@ -1,54 +1,54 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "supermemory-slack-connector",
-  "main": "src/index.tsx",
-  "compatibility_date": "2025-01-21",
-  "compatibility_flags": ["nodejs_compat"],
-  "observability": {
-    "enabled": true
-  },
-  "placement": {
-    "mode": "smart"
-  },
-  "d1_databases": [
-    {
-      "binding": "USERS_DATABASE",
-      "database_name": "supermemory-slack",
-      "database_id": "05a34dd0-b2df-40e1-9e3f-daec23f471d9",
-      "preview_database_id": "05a34dd0-b2df-40e1-9e3f-daec23f471d9"
-    }
-  ],
-  "kv_namespaces": [
-    {
-      "binding": "STATE_STORE",
-      "id": "placeholder_kv_id",
-      "preview_id": "placeholder_kv_id"
-    }
-  ],
-  "vars": {
-    // Authentication & Core
-    "BETTER_AUTH_URL": "http://localhost:8787",
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "supermemory-slack-connector",
+	"main": "src/index.tsx",
+	"compatibility_date": "2025-01-21",
+	"compatibility_flags": ["nodejs_compat"],
+	"observability": {
+		"enabled": true
+	},
+	"placement": {
+		"mode": "smart"
+	},
+	"d1_databases": [
+		{
+			"binding": "USERS_DATABASE",
+			"database_name": "supermemory-slack",
+			"database_id": "05a34dd0-b2df-40e1-9e3f-daec23f471d9",
+			"preview_database_id": "05a34dd0-b2df-40e1-9e3f-daec23f471d9"
+		}
+	],
+	"kv_namespaces": [
+		{
+			"binding": "STATE_STORE",
+			"id": "placeholder_kv_id",
+			"preview_id": "placeholder_kv_id"
+		}
+	],
+	"vars": {
+		// Authentication & Core
+		"BETTER_AUTH_URL": "http://localhost:8787",
 
-    // Supermemory API Configuration
-    "SUPERMEMORY_API_URL": "https://api.supermemory.ai",
+		// Supermemory API Configuration
+		"SUPERMEMORY_API_URL": "https://api.supermemory.ai",
 
-    // Environment-specific settings
-    "NODE_ENV": "development"
-  },
+		// Environment-specific settings
+		"NODE_ENV": "development"
+	},
 
-  // Runtime configuration for development/production
-  "env": {
-    "production": {
-      "vars": {
-        "BETTER_AUTH_URL": "https://slack.supermemory.ai",
-        "NODE_ENV": "production"
-      }
-    },
-    "staging": {
-      "vars": {
-        "BETTER_AUTH_URL": "https://slack-staging.supermemory.ai",
-        "NODE_ENV": "staging"
-      }
-    }
-  }
+	// Runtime configuration for development/production
+	"env": {
+		"production": {
+			"vars": {
+				"BETTER_AUTH_URL": "https://slack.supermemory.ai",
+				"NODE_ENV": "production"
+			}
+		},
+		"staging": {
+			"vars": {
+				"BETTER_AUTH_URL": "https://slack-staging.supermemory.ai",
+				"NODE_ENV": "staging"
+			}
+		}
+	}
 }
