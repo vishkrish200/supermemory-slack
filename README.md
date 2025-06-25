@@ -123,15 +123,31 @@ npm run deploy
 ```
 
 ### 5. Configure Slack App
+
+**🔧 Create & Configure Slack App:**
+
+For **experienced developers** (10-15 min setup):
+- **Quick Start**: [Slack App Quick Reference](docs/SLACK_APP_QUICK_START.md)
+
+For **detailed step-by-step** instructions:
+- **Complete Guide**: [Slack App Setup Guide](docs/SLACK_APP_SETUP.md)
+
+**Generate app manifest:**
 ```bash
-# Set your Worker URL in Slack app settings:
-# OAuth Redirect URL: https://your-worker.workers.dev/auth/slack/callback
-# Events Request URL: https://your-worker.workers.dev/slack/events
+# Create manifest for your environment
+npm run manifest:generate -- --env production
+
+# Then follow the setup guide to create your Slack app
 ```
 
 ## 📖 Detailed Setup
 
-For comprehensive setup instructions, including production deployment, security configuration, and troubleshooting, see our [Deployment Guide](docs/DEPLOYMENT.md).
+For comprehensive deployment instructions, including production configuration, security setup, and troubleshooting, see our documentation:
+
+- **🚀 Slack App Setup**: [docs/SLACK_APP_SETUP.md](docs/SLACK_APP_SETUP.md)
+- **⚡ Quick Reference**: [docs/SLACK_APP_QUICK_START.md](docs/SLACK_APP_QUICK_START.md)  
+- **🔧 Deployment Guide**: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+- **📡 API Reference**: [docs/API.md](docs/API.md)
 
 For automated setup, use our interactive configuration tool:
 ```bash
