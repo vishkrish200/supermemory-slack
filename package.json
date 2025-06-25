@@ -1,11 +1,48 @@
 {
   "name": "supermemory-slack-connector",
+  "version": "0.1.0",
+  "description": "Production-ready Slack connector for Supermemory - seamlessly sync conversations with intelligent knowledge management",
+  "main": "src/index.tsx",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/supermemoryai/slack-connector.git"
+  },
+  "keywords": [
+    "slack",
+    "supermemory",
+    "connector",
+    "cloudflare-workers",
+    "oauth",
+    "knowledge-management",
+    "typescript"
+  ],
+  "author": "Supermemory <team@supermemory.ai>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/supermemoryai/slack-connector/issues"
+  },
+  "homepage": "https://github.com/supermemoryai/slack-connector#readme",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy --minify",
+    "deploy:staging": "wrangler deploy --env staging --minify",
+    "deploy:prod": "wrangler deploy --env production --minify",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "setup": "bun scripts/setup.ts",
-    "lint": "biome lint --write ."
+    "setup:deployment": "bun scripts/setup-deployment.ts",
+    "drizzle:generate": "drizzle-kit generate",
+    "drizzle:migrate": "wrangler d1 migrations apply supermemory-slack --local",
+    "drizzle:migrate:prod": "wrangler d1 migrations apply supermemory-slack --remote",
+    "lint": "biome lint --write .",
+    "lint:check": "biome check .",
+    "type-check": "tsc --noEmit",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest --coverage",
+    "validate": "npm run type-check && npm run lint:check && npm test",
+    "tail": "wrangler tail",
+    "tail:staging": "wrangler tail --env staging",
+    "tail:prod": "wrangler tail --env production"
   },
   "dependencies": {
     "better-auth": "^1.2.10",
