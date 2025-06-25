@@ -1,218 +1,251 @@
 import type {
-	SlackChannel,
-	SlackError,
-	SlackOAuthResponse,
-	SlackUser,
+  SlackChannel,
+  SlackError,
+  SlackOAuthResponse,
+  SlackUser,
 } from "../types";
+import {
+  RateLimitedSlackClient,
+  handleSlackApiResponse,
+} from "../../middleware/slackRateLimit";
 
 export class SlackApiClient {
-	private baseUrl = "https://slack.com/api";
+  private baseUrl = "https://slack.com/api";
+  private rateLimitedClient?: RateLimitedSlackClient;
 
-	constructor(private accessToken?: string) {}
+  constructor(private accessToken?: string, private teamId?: string) {
+    if (teamId) {
+      this.rateLimitedClient = new RateLimitedSlackClient(teamId);
+    }
+  }
 
-	/**
-	 * Make an authenticated request to the Slack API
-	 */
-	private async makeRequest<T>(
-		endpoint: string,
-		options: RequestInit = {},
-		token?: string,
-	): Promise<T> {
-		const url = `${this.baseUrl}/${endpoint}`;
-		const authToken = token || this.accessToken;
+  /**
+   * Make an authenticated request to the Slack API with rate limiting
+   */
+  private async makeRequest<T>(
+    endpoint: string,
+    options: RequestInit = {},
+    token?: string,
+    channelId?: string
+  ): Promise<T> {
+    const url = `${this.baseUrl}/${endpoint}`;
+    const authToken = token || this.accessToken;
 
-		if (!authToken) {
-			throw new Error("No access token provided");
-		}
+    if (!authToken) {
+      throw new Error("No access token provided");
+    }
 
-		const headers = {
-			Authorization: `Bearer ${authToken}`,
-			"Content-Type": "application/json",
-			...options.headers,
-		};
+    const headers = {
+      Authorization: `Bearer ${authToken}`,
+      "Content-Type": "application/json",
+      ...options.headers,
+    };
 
-		const response = await fetch(url, {
-			...options,
-			headers,
-		});
+    // Extract method name from endpoint for rate limiting
+    const methodName = endpoint.split("?")[0];
 
-		if (!response.ok) {
-			throw new Error(
-				`Slack API error: ${response.status} ${response.statusText}`,
-			);
-		}
+    let response: Response;
 
-		const data = (await response.json()) as T & { ok: boolean; error?: string };
+    // Use rate-limited client if available
+    if (this.rateLimitedClient && this.teamId) {
+      response = await this.rateLimitedClient.makeRequest(
+        methodName,
+        url,
+        {
+          ...options,
+          headers,
+        },
+        channelId
+      );
+    } else {
+      // Fallback to direct fetch without rate limiting
+      response = await fetch(url, {
+        ...options,
+        headers,
+      });
 
-		if (!data.ok) {
-			const error = data as SlackError;
-			throw new Error(`Slack API error: ${error.error}`);
-		}
+      // Still handle Slack's rate limit responses
+      response = await handleSlackApiResponse(response);
+    }
 
-		return data;
-	}
+    if (!response.ok) {
+      throw new Error(
+        `Slack API error: ${response.status} ${response.statusText}`
+      );
+    }
 
-	/**
-	 * Exchange OAuth code for access token
-	 */
-	async exchangeOAuthCode(
-		code: string,
-		clientId: string,
-		clientSecret: string,
-		redirectUri?: string,
-	): Promise<SlackOAuthResponse> {
-		const params = new URLSearchParams({
-			client_id: clientId,
-			client_secret: clientSecret,
-			code,
-		});
+    const data = (await response.json()) as T & { ok: boolean; error?: string };
 
-		if (redirectUri) {
-			params.append("redirect_uri", redirectUri);
-		}
+    if (!data.ok) {
+      const error = data as SlackError;
+      throw new Error(`Slack API error: ${error.error}`);
+    }
 
-		const response = await fetch(`${this.baseUrl}/oauth.v2.access`, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/x-www-form-urlencoded",
-			},
-			body: params,
-		});
+    return data;
+  }
 
-		const data = (await response.json()) as SlackOAuthResponse;
+  /**
+   * Exchange OAuth code for access token
+   */
+  async exchangeOAuthCode(
+    code: string,
+    clientId: string,
+    clientSecret: string,
+    redirectUri?: string
+  ): Promise<SlackOAuthResponse> {
+    const params = new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      code,
+    });
 
-		if (!data.ok) {
-			const error = data as unknown as SlackError;
-			throw new Error(`OAuth error: ${error.error}`);
-		}
+    if (redirectUri) {
+      params.append("redirect_uri", redirectUri);
+    }
 
-		return data;
-	}
+    const response = await fetch(`${this.baseUrl}/oauth.v2.access`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: params,
+    });
 
-	/**
-	 * Get user information
-	 */
-	async getUser(userId: string, token?: string): Promise<SlackUser> {
-		const response = await this.makeRequest<{ user: SlackUser }>(
-			`users.info?user=${userId}`,
-			{},
-			token,
-		);
-		return response.user;
-	}
+    const data = (await response.json()) as SlackOAuthResponse;
 
-	/**
-	 * Get channel information
-	 */
-	async getChannel(channelId: string, token?: string): Promise<SlackChannel> {
-		const response = await this.makeRequest<{ channel: SlackChannel }>(
-			`conversations.info?channel=${channelId}`,
-			{},
-			token,
-		);
-		return response.channel;
-	}
+    if (!data.ok) {
+      const error = data as unknown as SlackError;
+      throw new Error(`OAuth error: ${error.error}`);
+    }
 
-	/**
-	 * List channels in a workspace
-	 */
-	async listChannels(
-		token?: string,
-		types = "public_channel,private_channel",
-		limit = 1000,
-	): Promise<SlackChannel[]> {
-		const response = await this.makeRequest<{
-			channels: SlackChannel[];
-			response_metadata?: { next_cursor?: string };
-		}>(`conversations.list?types=${types}&limit=${limit}`, {}, token);
-		return response.channels;
-	}
+    return data;
+  }
 
-	/**
-	 * Get conversation history
-	 */
-	async getConversationHistory(
-		channelId: string,
-		cursor?: string,
-		limit = 100,
-		oldest?: string,
-		latest?: string,
-		token?: string,
-	): Promise<{
-		messages: any[];
-		has_more: boolean;
-		response_metadata?: { next_cursor?: string };
-	}> {
-		const params = new URLSearchParams({
-			channel: channelId,
-			limit: limit.toString(),
-		});
+  /**
+   * Get user information
+   */
+  async getUser(userId: string, token?: string): Promise<SlackUser> {
+    const response = await this.makeRequest<{ user: SlackUser }>(
+      `users.info?user=${userId}`,
+      {},
+      token
+    );
+    return response.user;
+  }
 
-		if (cursor) params.append("cursor", cursor);
-		if (oldest) params.append("oldest", oldest);
-		if (latest) params.append("latest", latest);
+  /**
+   * Get channel information
+   */
+  async getChannel(channelId: string, token?: string): Promise<SlackChannel> {
+    const response = await this.makeRequest<{ channel: SlackChannel }>(
+      `conversations.info?channel=${channelId}`,
+      {},
+      token,
+      channelId
+    );
+    return response.channel;
+  }
 
-		const response = await this.makeRequest<{
-			messages: any[];
-			has_more: boolean;
-			response_metadata?: { next_cursor?: string };
-		}>(`conversations.history?${params.toString()}`, {}, token);
+  /**
+   * List channels in a workspace
+   */
+  async listChannels(
+    token?: string,
+    types = "public_channel,private_channel",
+    limit = 1000
+  ): Promise<SlackChannel[]> {
+    const response = await this.makeRequest<{
+      channels: SlackChannel[];
+      response_metadata?: { next_cursor?: string };
+    }>(`conversations.list?types=${types}&limit=${limit}`, {}, token);
+    return response.channels;
+  }
 
-		return response;
-	}
+  /**
+   * Get conversation history
+   */
+  async getConversationHistory(
+    channelId: string,
+    cursor?: string,
+    limit = 100,
+    oldest?: string,
+    latest?: string,
+    token?: string
+  ): Promise<{
+    messages: any[];
+    has_more: boolean;
+    response_metadata?: { next_cursor?: string };
+  }> {
+    const params = new URLSearchParams({
+      channel: channelId,
+      limit: limit.toString(),
+    });
 
-	/**
-	 * Get thread replies
-	 */
-	async getThreadReplies(
-		channelId: string,
-		threadTs: string,
-		cursor?: string,
-		limit = 100,
-		token?: string,
-	): Promise<{
-		messages: any[];
-		has_more: boolean;
-		response_metadata?: { next_cursor?: string };
-	}> {
-		const params = new URLSearchParams({
-			channel: channelId,
-			ts: threadTs,
-			limit: limit.toString(),
-		});
+    if (cursor) params.append("cursor", cursor);
+    if (oldest) params.append("oldest", oldest);
+    if (latest) params.append("latest", latest);
 
-		if (cursor) params.append("cursor", cursor);
+    const response = await this.makeRequest<{
+      messages: any[];
+      has_more: boolean;
+      response_metadata?: { next_cursor?: string };
+    }>(`conversations.history?${params.toString()}`, {}, token, channelId);
 
-		const response = await this.makeRequest<{
-			messages: any[];
-			has_more: boolean;
-			response_metadata?: { next_cursor?: string };
-		}>(`conversations.replies?${params.toString()}`, {}, token);
+    return response;
+  }
 
-		return response;
-	}
+  /**
+   * Get thread replies
+   */
+  async getThreadReplies(
+    channelId: string,
+    threadTs: string,
+    cursor?: string,
+    limit = 100,
+    token?: string
+  ): Promise<{
+    messages: any[];
+    has_more: boolean;
+    response_metadata?: { next_cursor?: string };
+  }> {
+    const params = new URLSearchParams({
+      channel: channelId,
+      ts: threadTs,
+      limit: limit.toString(),
+    });
 
-	/**
-	 * Test authentication
-	 */
-	async testAuth(
-		token?: string,
-	): Promise<{ ok: boolean; team: string; user: string }> {
-		return this.makeRequest<{ ok: boolean; team: string; user: string }>(
-			"auth.test",
-			{},
-			token,
-		);
-	}
+    if (cursor) params.append("cursor", cursor);
 
-	/**
-	 * Revoke access token
-	 */
-	async revokeToken(token: string): Promise<{ ok: boolean; revoked: boolean }> {
-		return this.makeRequest<{ ok: boolean; revoked: boolean }>("auth.revoke", {
-			method: "POST",
-			headers: { "Content-Type": "application/x-www-form-urlencoded" },
-			body: `token=${token}`,
-		});
-	}
+    const response = await this.makeRequest<{
+      messages: any[];
+      has_more: boolean;
+      response_metadata?: { next_cursor?: string };
+    }>(`conversations.replies?${params.toString()}`, {}, token, channelId);
+
+    return response;
+  }
+
+  /**
+   * Test authentication
+   */
+  async testAuth(
+    token?: string
+  ): Promise<{ ok: boolean; team: string; user: string }> {
+    return this.makeRequest<{ ok: boolean; team: string; user: string }>(
+      "auth.test",
+      {},
+      token
+    );
+  }
+
+  /**
+   * Revoke access token
+   */
+  async revokeToken(token: string): Promise<{ ok: boolean; revoked: boolean }> {
+    return this.makeRequest<{ ok: boolean; revoked: boolean }>("auth.revoke", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: `token=${token}`,
+    });
+  }
 }
