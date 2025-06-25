@@ -30,6 +30,7 @@
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "setup": "bun scripts/setup.ts",
     "setup:deployment": "bun scripts/setup-deployment.ts",
+    "manifest:generate": "node scripts/generate-manifest.js",
     "drizzle:generate": "drizzle-kit generate",
     "drizzle:migrate": "wrangler d1 migrations apply supermemory-slack --local",
     "drizzle:migrate:prod": "wrangler d1 migrations apply supermemory-slack --remote",

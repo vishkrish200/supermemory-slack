@@ -1,0 +1,107 @@
+display_information:
+  name: Supermemory Connector
+  description: Sync Slack conversations to Supermemory for AI-powered knowledge management
+  background_color: "#2c2d30"
+  long_description: |
+    The Supermemory Connector automatically syncs your Slack conversations to Supermemory, 
+    enabling AI-powered search and knowledge management across your team's discussions. 
+
+    Features:
+    - Automatic message syncing from selected channels
+    - Preserves threading and conversation context
+    - Secure token encryption and GDPR compliance
+    - Configurable channel selection and document limits
+    - Historical backfill capabilities
+
+    Connect your workspace to transform your Slack history into searchable, AI-accessible knowledge.
+
+features:
+  bot_user:
+    display_name: Supermemory Bot
+    always_online: false
+
+  shortcuts:
+    - name: Sync Channel History
+      type: global
+      callback_id: sync_channel_history
+      description: Manually trigger sync for a specific channel
+
+  slash_commands:
+    - command: /supermemory
+      url: "{{WORKER_URL}}/slack/commands"
+      description: Manage Supermemory sync settings
+      usage_hint: "status | sync | help"
+      should_escape: false
+
+oauth_config:
+  redirect_urls:
+    - "{{WORKER_URL}}/slack/oauth/callback"
+  scopes:
+    user:
+      # No user scopes required - we use bot tokens only
+    bot:
+      # Essential read permissions for syncing content
+      - channels:read # List public channels
+      - groups:read # List private channels
+      - im:read # List direct messages
+      - mpim:read # List multi-person direct messages
+
+      # Message history access for syncing
+      - channels:history # Read public channel messages
+      - groups:history # Read private channel messages
+      - im:history # Read direct messages
+      - mpim:history # Read multi-person DM messages
+
+      # File access for complete context
+      - files:read # Access shared files and attachments
+
+      # User and team information
+      - users:read # Get user names and profiles
+      - users:read.email # Get user email addresses for identification
+      - team:read # Get workspace information
+
+      # Bot functionality
+      - chat:write # Send notifications and status updates
+      - commands # Handle slash commands
+
+settings:
+  event_subscriptions:
+    request_url: "{{WORKER_URL}}/slack/events"
+    bot_events:
+      # Core message events for real-time syncing
+      - message.channels # Public channel messages
+      - message.groups # Private channel messages
+      - message.im # Direct messages
+      - message.mpim # Multi-person direct messages
+
+      # File sharing events
+      - file_shared # When files are shared
+      - file_public # When files become public
+
+      # Channel management events
+      - channel_created # New channels
+      - channel_rename # Channel name changes
+      - channel_archive # Channel archiving
+      - channel_unarchive # Channel unarchiving
+
+      # Team events for user management
+      - team_join # New team members
+      - user_change # User profile updates
+
+  interactivity:
+    is_enabled: true
+    request_url: "{{WORKER_URL}}/slack/interactive"
+    message_menu_options_url: "{{WORKER_URL}}/slack/options"
+
+  org_deploy_enabled: false
+  socket_mode_enabled: true
+  token_rotation_enabled: true
+# Configuration templates for different environments
+# Replace {{WORKER_URL}} with your actual Cloudflare Worker URL:
+#
+# Development:   http://localhost:8787
+# Staging:       https://slack-staging.supermemory.ai
+# Production:    https://slack.supermemory.ai
+#
+# Example replacement:
+# sed 's/{{WORKER_URL}}/https:\/\/slack.supermemory.ai/g' slack-app-manifest.yaml > slack-app-manifest-prod.yaml
