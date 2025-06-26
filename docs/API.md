@@ -209,7 +209,7 @@ interface SupermemoryPayload {
     timestamp: string;
     channel: string;
     thread_id?: string;
-    file_urls?: string[];
+    file_urls?: string;
     slack_ts: string;
     slack_team_id: string;
   };

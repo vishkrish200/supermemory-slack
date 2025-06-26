@@ -84,10 +84,9 @@ async function testApiConnection() {
       logSuccess(`Health status: ${health.status} (${health.timestamp})`);
 
       return client;
-    } else {
+    }
       logError("API connection failed");
       return null;
-    }
   } catch (error) {
     logError(`Connection error: ${(error as Error).message}`);
     return null;
@@ -220,7 +219,7 @@ async function testRateLimiting() {
 
     // Test status
     const status = rateLimiter.getStatus();
-    logInfo(`Rate limiter status:`);
+    logInfo("Rate limiter status:");
     logInfo(`  Available tokens: ${status.availableTokens}`);
     logInfo(`  Capacity: ${status.capacity}`);
     logInfo(`  Refill rate: ${status.refillRate} tokens/minute`);
@@ -356,10 +355,9 @@ async function testFactoryFunction() {
       logInfo(`  getMetrics: ${hasGetMetrics ? "✅" : "❌"}`);
 
       return client;
-    } else {
+    }
       logError("Factory function returned invalid client");
       return null;
-    }
   } catch (error) {
     logError(`Factory function test failed: ${(error as Error).message}`);
     return null;
@@ -453,7 +451,7 @@ async function main() {
     );
   }
 
-  logInfo(`Configuration:`);
+  logInfo("Configuration:");
   logInfo(`  API URL: ${TEST_CONFIG.baseUrl}`);
   logInfo(`  API Key: ${TEST_CONFIG.apiKey.substring(0, 8)}...`);
   logInfo(`  Timeout: ${TEST_CONFIG.timeout}ms`);

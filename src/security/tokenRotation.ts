@@ -8,7 +8,7 @@
 import { eq, and, lt, sql } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import { SecureTokenStorage } from "./tokenStorage";
-import { SecurityAuditLogger, type SecurityEventType } from "./auditLogger";
+import type { SecurityAuditLogger, SecurityEventType } from "./auditLogger";
 import { TokenManager } from "./encryption";
 import { slackToken, type SlackToken } from "../db/schema";
 import { SlackApiClient } from "../slack/services/client";
@@ -83,8 +83,8 @@ export class TokenRotationService {
    */
   async rotateTeamToken(
     teamId: string,
-    reason: string = "manual_rotation",
-    force: boolean = false
+    reason = "manual_rotation",
+    force = false
   ): Promise<RotationResult> {
     try {
       await this.auditLogger.logEvent({
@@ -189,7 +189,7 @@ export class TokenRotationService {
    * Rotate encryption keys (affects all tokens)
    */
   async rotateEncryptionKeys(
-    reason: string = "scheduled_rotation"
+    reason = "scheduled_rotation"
   ): Promise<RotationResult> {
     try {
       await this.auditLogger.logEvent({

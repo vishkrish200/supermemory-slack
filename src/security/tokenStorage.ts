@@ -374,7 +374,7 @@ export class SecureTokenStorage {
    */
   async revokeTeamTokens(
     teamId: string,
-    reason: string = "team_deletion"
+    reason = "team_deletion"
   ): Promise<number> {
     try {
       const now = new Date();

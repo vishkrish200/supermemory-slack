@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi, MockedFunction } from "vitest";
+import { describe, it, expect, beforeEach, vi, type MockedFunction } from "vitest";
 import {
   SupermemoryApiClient,
   createSupermemoryClient,

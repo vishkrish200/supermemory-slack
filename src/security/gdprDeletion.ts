@@ -7,7 +7,7 @@
 
 import { eq, and } from 'drizzle-orm';
 import type { DrizzleD1Database } from 'drizzle-orm/d1';
-import { SecurityAuditLogger } from './auditLogger';
+import type { SecurityAuditLogger } from './auditLogger';
 import { SecureTokenStorage } from './tokenStorage';
 import { 
   slackTeam, 
