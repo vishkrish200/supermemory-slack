@@ -4,6 +4,8 @@ import { Hono } from "hono";
 import type { Session, User } from "../db/schema";
 import * as schema from "../db/schema";
 import { SecureTokenStorage } from "../security/tokenStorage";
+import { TokenRotationService } from "../security/tokenRotation";
+import { SecurityAuditLogger } from "../security/auditLogger";
 import { SlackApiClient } from "./services/client";
 import { MessageTransformerService } from "./services/transformer";
 import type {
@@ -793,75 +795,32 @@ async function sendToSupermemory(
 }
 
 /**
- * Rotate team's access token by re-authorizing with Slack
+ * Enhanced token rotation using TokenRotationService
  */
 async function rotateTeamToken(
   teamId: string,
-  env: Env
+  env: Env,
+  reason = "manual",
+  force = false
 ): Promise<{ success: boolean; error?: string; newTokenCreated?: boolean }> {
-  const dbClient = db(env);
-
   try {
-    // Check if team exists and has current tokens
-    const team = await dbClient
-      .select()
-      .from(schema.slackTeam)
-      .where(eq(schema.slackTeam.id, teamId))
-      .limit(1);
+    const dbClient = db(env);
+    const auditLogger = new SecurityAuditLogger(dbClient);
+    const rotationService = new TokenRotationService(
+      dbClient,
+      auditLogger,
+      env.SECRET
+    );
 
-    if (team.length === 0) {
-      return { success: false, error: "Team not found" };
-    }
+    const result = await rotationService.rotateTeamToken(teamId, reason, force);
 
-    const currentTokens = await dbClient
-      .select()
-      .from(schema.slackToken)
-      .where(
-        and(
-          eq(schema.slackToken.teamId, teamId),
-          eq(schema.slackToken.isRevoked, false)
-        )
-      );
-
-    if (currentTokens.length === 0) {
-      return { success: false, error: "No active tokens found for rotation" };
-    }
-
-    // Test current token validity first
-    const currentToken = currentTokens[0];
-    const decryptedToken = await decrypt(currentToken.accessToken, env.SECRET);
-    const slackClient = new SlackApiClient(decryptedToken);
-
-    try {
-      await slackClient.testAuth();
-      // Token is still valid, no rotation needed
-      return { success: true, newTokenCreated: false };
-    } catch (_authError) {
-      // Token is invalid, needs rotation
-      console.log(`Token for team ${teamId} is invalid, marking as revoked`);
-
-      // Mark current tokens as revoked
-      await dbClient
-        .update(schema.slackToken)
-        .set({
-          isRevoked: true,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(schema.slackToken.teamId, teamId),
-            eq(schema.slackToken.isRevoked, false)
-          )
-        );
-
-      return {
-        success: true,
-        newTokenCreated: false,
-        error: "Token revoked - re-authorization required through OAuth flow",
-      };
-    }
+    return {
+      success: result.success,
+      error: result.error,
+      newTokenCreated: result.newTokenCreated,
+    };
   } catch (error) {
-    console.error("Error during token rotation:", error);
+    console.error("Error during enhanced token rotation:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
