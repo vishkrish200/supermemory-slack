@@ -3,7 +3,7 @@ import { drizzle } from "drizzle-orm/d1";
 import { Hono } from "hono";
 import type { Session, User } from "../db/schema";
 import * as schema from "../db/schema";
-import { decrypt, encrypt } from "../utils/cipher";
+import { SecureTokenStorage } from "../security/tokenStorage";
 import { SlackApiClient } from "./services/client";
 import { MessageTransformerService } from "./services/transformer";
 import type {
@@ -589,94 +589,46 @@ export const slackRouter = new Hono<{
   });
 
 /**
- * Store Slack OAuth credentials in the database
+ * Store Slack OAuth credentials in the database using secure token storage
  */
 async function storeSlackCredentials(
   oauthResponse: SlackOAuthResponse,
   encryptionSecret: string,
   env: Env
 ): Promise<void> {
-  const dbClient = db(env);
-
   try {
-    // Encrypt the access token before storing
-    const encryptedToken = await encrypt(
-      oauthResponse.access_token,
-      encryptionSecret
+    const dbClient = db(env);
+    const secureStorage = new SecureTokenStorage(dbClient, encryptionSecret);
+
+    // Get client IP for audit logging
+    const ipAddress = env.CF_CONNECTING_IP || env.X_FORWARDED_FOR || undefined;
+
+    await secureStorage.storeOAuthData(oauthResponse, ipAddress);
+
+    console.log(
+      `✅ Securely stored credentials for team: ${oauthResponse.team.name}`
     );
-
-    // Store or update team information
-    await dbClient
-      .insert(schema.slackTeam)
-      .values({
-        id: oauthResponse.team.id,
-        name: oauthResponse.team.name,
-        domain: null, // Domain not provided in OAuth response
-        enterpriseId: oauthResponse.enterprise?.id || null,
-        enterpriseName: oauthResponse.enterprise?.name || null,
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .onConflictDoUpdate({
-        target: schema.slackTeam.id,
-        set: {
-          name: oauthResponse.team.name,
-          domain: null, // Domain not provided in OAuth response
-          isActive: true,
-          updatedAt: new Date(),
-        },
-      });
-
-    // Store the access token
-    await dbClient.insert(schema.slackToken).values({
-      id: crypto.randomUUID(),
-      teamId: oauthResponse.team.id,
-      slackUserId: oauthResponse.authed_user.id,
-      accessToken: encryptedToken,
-      tokenType: oauthResponse.token_type || "bearer",
-      scope: oauthResponse.scope,
-      botUserId: oauthResponse.bot_user_id || null,
-      appId: oauthResponse.app_id,
-      isRevoked: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
-    console.log(`Stored credentials for team: ${oauthResponse.team.name}`);
   } catch (error) {
-    console.error("Error storing Slack credentials:", error);
+    console.error("❌ Error storing Slack credentials:", error);
     throw error;
   }
 }
 
 /**
- * Get team's access token from database
+ * Get team's access token from database using secure token storage
  */
 async function getTeamAccessToken(
   teamId: string,
   env: Env
 ): Promise<string | null> {
   try {
-    const tokens = await db(env)
-      .select()
-      .from(schema.slackToken)
-      .where(
-        and(
-          eq(schema.slackToken.teamId, teamId),
-          eq(schema.slackToken.isRevoked, false)
-        )
-      )
-      .limit(1);
+    const dbClient = db(env);
+    const secureStorage = new SecureTokenStorage(dbClient, env.SECRET);
 
-    if (tokens.length === 0) {
-      return null;
-    }
-
-    const token = tokens[0];
-    return await decrypt(token.accessToken, env.SECRET);
+    const tokenData = await secureStorage.getTeamBotToken(teamId);
+    return tokenData?.decryptedToken || null;
   } catch (error) {
-    console.error("Error retrieving team access token:", error);
+    console.error("❌ Error retrieving team access token:", error);
     return null;
   }
 }
