@@ -11,6 +11,10 @@ node_modules/
 
 # Environment variables
 .env
+.dev.vars
+
+# Wrangler build artifacts
+.wrangler/
 
 # Editor directories and files
 .idea
