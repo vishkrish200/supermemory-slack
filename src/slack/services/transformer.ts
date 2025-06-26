@@ -82,11 +82,15 @@ export class MessageTransformerService {
       processedFiles
     );
 
-    // Extract file URLs
+    // Extract file URLs and ensure they're properly converted to string
     const fileUrls =
       processedFiles.length > 0
         ? this.fileHandler.getFileUrls(processedFiles)
         : message.files?.map((file) => file.url_private) || [];
+
+    // Ensure file_urls is always a string, never an array
+    const fileUrlsString =
+      fileUrls.length > 0 ? fileUrls.join(", ") : undefined;
 
     return {
       content,
@@ -98,7 +102,7 @@ export class MessageTransformerService {
         channel: message.channel,
         channel_name: resolvedChannelName,
         thread_id: message.thread_ts,
-        file_urls: fileUrls.length > 0 ? fileUrls.join(", ") : undefined,
+        file_urls: fileUrlsString,
         message_type: this.getMessageType(message),
         team_id: teamId,
         team_name: teamName,
@@ -123,8 +127,12 @@ export class MessageTransformerService {
     // Determine message type
     const messageType = this.getMessageType(message);
 
-    // Extract file URLs if present
+    // Extract file URLs if present and ensure they're properly converted to string
     const fileUrls = message.files?.map((file) => file.url_private) || [];
+
+    // Ensure file_urls is always a string, never an array
+    const fileUrlsString =
+      fileUrls.length > 0 ? fileUrls.join(", ") : undefined;
 
     // Generate tags
     const tags = this.generateTags(message, teamId, channelName);
@@ -139,7 +147,7 @@ export class MessageTransformerService {
         channel: message.channel,
         channel_name: channelName,
         thread_id: message.thread_ts,
-        file_urls: fileUrls.length > 0 ? fileUrls.join(", ") : undefined,
+        file_urls: fileUrlsString,
         message_type: messageType,
         team_id: teamId,
         team_name: teamName,
@@ -508,11 +516,15 @@ export class MessageTransformerService {
           processedFiles
         );
 
-        // Extract file URLs
+        // Extract file URLs and ensure they're properly converted to string
         const fileUrls =
           processedFiles.length > 0
             ? this.fileHandler.getFileUrls(processedFiles)
             : message.files?.map((file) => file.url_private) || [];
+
+        // Ensure file_urls is always a string, never an array
+        const fileUrlsString =
+          fileUrls.length > 0 ? fileUrls.join(", ") : undefined;
 
         return {
           content,
@@ -524,7 +536,7 @@ export class MessageTransformerService {
             channel: message.channel,
             channel_name: resolvedChannelName,
             thread_id: message.thread_ts,
-            file_urls: fileUrls.length > 0 ? fileUrls.join(", ") : undefined,
+            file_urls: fileUrlsString,
             message_type: this.getMessageType(message),
             team_id: teamId,
             team_name: teamName,
