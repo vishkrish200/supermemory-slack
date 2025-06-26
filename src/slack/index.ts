@@ -6,6 +6,7 @@ import * as schema from "../db/schema";
 import { SecureTokenStorage } from "../security/tokenStorage";
 import { TokenRotationService } from "../security/tokenRotation";
 import { SecurityAuditLogger } from "../security/auditLogger";
+import { GDPRDeletionService } from "../security/gdprDeletion";
 import { SlackApiClient } from "./services/client";
 import { MessageTransformerService } from "./services/transformer";
 import type {
@@ -996,7 +997,7 @@ async function getWorkspaceStatus(teamId: string, env: Env) {
 }
 
 /**
- * GDPR-compliant data deletion for workspace
+ * Enhanced GDPR-compliant data deletion using GDPRDeletionService
  */
 async function deleteWorkspaceData(
   teamId: string,
@@ -1009,61 +1010,32 @@ async function deleteWorkspaceData(
   deletedTokens?: number;
   deletedSyncLogs?: number;
 }> {
-  const dbClient = db(env);
-
   try {
-    // Start by revoking all tokens first
-    const revokeResult = await revokeTeamToken(
-      teamId,
-      `GDPR deletion: ${reason}`,
-      env
+    const dbClient = db(env);
+    const auditLogger = new SecurityAuditLogger(dbClient);
+    const gdprService = new GDPRDeletionService(
+      dbClient,
+      auditLogger,
+      env.SECRET
     );
 
-    if (!revokeResult.success) {
-      return { success: false, error: revokeResult.error };
-    }
-
-    // Delete all sync logs for this team
-    const deletedSyncLogs = await dbClient
-      .delete(schema.slackSyncLog)
-      .where(eq(schema.slackSyncLog.teamId, teamId));
-
-    // Delete all backfill records for this team
-    await dbClient
-      .delete(schema.slackBackfill)
-      .where(eq(schema.slackBackfill.teamId, teamId));
-
-    // Delete all channel configurations for this team
-    await dbClient
-      .delete(schema.slackChannel)
-      .where(eq(schema.slackChannel.teamId, teamId));
-
-    // Delete all tokens for this team (physical deletion)
-    const deletedTokens = await dbClient
-      .delete(schema.slackToken)
-      .where(eq(schema.slackToken.teamId, teamId));
-
-    // Finally, delete the team record itself
-    await dbClient
-      .delete(schema.slackTeam)
-      .where(eq(schema.slackTeam.id, teamId));
-
-    // Log the deletion for audit purposes
-    console.log(`GDPR data deletion completed for team ${teamId}:`, {
+    const result = await gdprService.processGDPRDeletion({
+      teamId,
       reason,
+      requestedBy: "api_endpoint",
       contactEmail,
-      deletedTokens: deletedTokens.meta.changes || 0,
-      deletedSyncLogs: deletedSyncLogs.meta.changes || 0,
-      timestamp: new Date().toISOString(),
+      requestedAt: new Date(),
+      retainAuditLogs: true, // Keep audit logs for compliance
     });
 
     return {
-      success: true,
-      deletedTokens: deletedTokens.meta.changes || 0,
-      deletedSyncLogs: deletedSyncLogs.meta.changes || 0,
+      success: result.success,
+      error: result.error,
+      deletedTokens: result.deletedData.tokens,
+      deletedSyncLogs: result.deletedData.syncLogs,
     };
   } catch (error) {
-    console.error("Error during GDPR data deletion:", error);
+    console.error("Error during enhanced GDPR data deletion:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",
