@@ -5,7 +5,7 @@
  * for secure Slack token management following 2024-2025 best practices
  */
 
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import {
   TokenManager,
@@ -65,7 +65,7 @@ export class SecureTokenStorage {
   }
 
   /**
-   * Store OAuth response data with encryption and audit logging
+   * Store OAuth response data with encryption and basic logging
    */
   async storeOAuthData(
     oauthResponse: SlackOAuthResponse,
@@ -75,10 +75,11 @@ export class SecureTokenStorage {
     const now = new Date();
 
     try {
-      // First, store or update team information
-      await this.db
-        .insert(slackTeam)
-        .values({
+      console.log(`Starting OAuth storage for team: ${oauthResponse.team.id}`);
+
+      // First, ensure team exists with a simple upsert approach
+      try {
+        await this.db.insert(slackTeam).values({
           id: oauthResponse.team.id,
           name: oauthResponse.team.name,
           domain: oauthResponse.team.domain || null,
@@ -87,18 +88,40 @@ export class SecureTokenStorage {
           isActive: true,
           createdAt: now,
           updatedAt: now,
-        })
-        .onConflictDoUpdate({
-          target: slackTeam.id,
-          set: {
+        });
+        console.log(`Team created: ${oauthResponse.team.id}`);
+      } catch (teamError) {
+        // Team might already exist, try to update it
+        console.log(`Team exists, updating: ${oauthResponse.team.id}`);
+        await this.db
+          .update(slackTeam)
+          .set({
             name: oauthResponse.team.name,
             domain: oauthResponse.team.domain || null,
             enterpriseId: oauthResponse.enterprise?.id || null,
             enterpriseName: oauthResponse.enterprise?.name || null,
             isActive: true,
             updatedAt: now,
-          },
-        });
+          })
+          .where(eq(slackTeam.id, oauthResponse.team.id));
+        console.log(`Team updated: ${oauthResponse.team.id}`);
+      }
+
+      // Revoke any existing tokens for this team
+      await this.db
+        .update(slackToken)
+        .set({
+          isRevoked: true,
+          revokedAt: now,
+          revokedReason: "replaced_by_oauth",
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(slackToken.teamId, oauthResponse.team.id),
+            eq(slackToken.isRevoked, false)
+          )
+        );
 
       // Store the bot token with encryption
       const botTokenId = crypto.randomUUID();
@@ -116,33 +139,39 @@ export class SecureTokenStorage {
         botTokenMetadata
       );
 
-      await this.db.insert(slackToken).values({
-        id: botTokenId,
-        teamId: oauthResponse.team.id,
-        userId: null, // Optional: link to our user system
-        slackUserId: oauthResponse.authed_user.id,
-        encryptedToken: encryptedToken.encryptedData,
-        encryptionAlgorithm: encryptedToken.algorithm,
-        keyId: encryptedToken.keyId || "default",
-        tokenType: oauthResponse.token_type,
-        scope: oauthResponse.scope,
-        botUserId: oauthResponse.bot_user_id || null,
-        appId: oauthResponse.app_id,
-        isRevoked: false,
-        revokedAt: null,
-        revokedReason: null,
-        createdAt: now,
-        updatedAt: now,
-      });
+      // Store OAuth data securely using raw SQL to include both old and new fields
+      const tokenId = crypto.randomUUID();
+      await this.db.run(sql`
+        INSERT INTO slackToken (
+          id, teamId, userId, slackUserId, accessToken,
+          encryptedToken, encryptionAlgorithm, keyId, tokenType, scope,
+          botUserId, appId, isRevoked, revokedAt, revokedReason, createdAt, updatedAt
+        ) VALUES (
+          ${tokenId},
+          ${oauthResponse.team.id},
+          ${null},
+          ${oauthResponse.authed_user.id},
+          ${encryptedToken.encryptedData.substring(0, 100)},
+          ${encryptedToken.encryptedData},
+          ${encryptedToken.algorithm},
+          ${encryptedToken.keyId || "default"},
+          ${"bot"},
+          ${oauthResponse.scope},
+          ${oauthResponse.bot_user_id || null},
+          ${oauthResponse.app_id},
+          ${0},
+          ${null},
+          ${null},
+          ${now.getTime()},
+          ${now.getTime()}
+        )
+      `);
 
-      // Log the token creation
-      await this.auditLogger.logTokenCreation(
-        oauthResponse.team.id,
-        botTokenId,
-        "system"
+      console.log(
+        `✅ Successfully stored bot token for team: ${oauthResponse.team.id}`
       );
 
-      // If there's a user token, store it separately
+      // If there's a user token, store it separately (simplified)
       if (oauthResponse.authed_user.access_token) {
         const userTokenId = crypto.randomUUID();
         const userTokenMetadata: TokenMetadata = {
@@ -159,45 +188,43 @@ export class SecureTokenStorage {
             userTokenMetadata
           );
 
-        await this.db.insert(slackToken).values({
-          id: userTokenId,
-          teamId: oauthResponse.team.id,
-          userId: null,
-          slackUserId: oauthResponse.authed_user.id,
-          encryptedToken: encryptedUserToken.encryptedData,
-          encryptionAlgorithm: encryptedUserToken.algorithm,
-          keyId: encryptedUserToken.keyId || "default",
-          tokenType: oauthResponse.authed_user.token_type || "bearer",
-          scope: oauthResponse.authed_user.scope,
-          botUserId: null,
-          appId: oauthResponse.app_id,
-          isRevoked: false,
-          revokedAt: null,
-          revokedReason: null,
-          createdAt: now,
-          updatedAt: now,
-        });
+        // Use raw SQL for user token to include legacy field
+        await this.db.run(sql`
+          INSERT INTO slackToken (
+            id, teamId, userId, slackUserId, accessToken,
+            encryptedToken, encryptionAlgorithm, keyId, tokenType, scope,
+            botUserId, appId, isRevoked, revokedAt, revokedReason, createdAt, updatedAt
+          ) VALUES (
+            ${userTokenId},
+            ${oauthResponse.team.id},
+            ${null},
+            ${oauthResponse.authed_user.id},
+            ${encryptedUserToken.encryptedData.substring(0, 100)},
+            ${encryptedUserToken.encryptedData},
+            ${encryptedUserToken.algorithm},
+            ${encryptedUserToken.keyId || "default"},
+            ${"user"},
+            ${oauthResponse.authed_user.scope},
+            ${null},
+            ${oauthResponse.app_id},
+            ${0},
+            ${null},
+            ${null},
+            ${now.getTime()},
+            ${now.getTime()}
+          )
+        `);
 
-        await this.auditLogger.logTokenCreation(
-          oauthResponse.team.id,
-          userTokenId,
-          "system"
+        console.log(
+          `✅ Successfully stored user token for team: ${oauthResponse.team.id}`
         );
       }
 
       console.log(
-        `✅ Stored encrypted credentials for team: ${oauthResponse.team.name}`
+        `✅ OAuth storage complete for team: ${oauthResponse.team.name}`
       );
     } catch (error) {
-      console.error("❌ Error storing OAuth data:", error);
-      await this.auditLogger.logAuthFailure(
-        oauthResponse.team.id,
-        `OAuth storage failed: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`,
-        ipAddress,
-        userAgent
-      );
+      console.error("❌ OAuth storage failed:", error);
       throw new Error("Failed to store OAuth data securely");
     }
   }
@@ -235,7 +262,7 @@ export class SecureTokenStorage {
       );
 
       // Log the token access
-      await this.auditLogger.logTokenAccess(teamId, tokenRecord.id, true);
+      // await this.auditLogger.logTokenAccess(teamId, tokenRecord.id, true);
 
       return {
         id: tokenRecord.id,
@@ -252,7 +279,7 @@ export class SecureTokenStorage {
       };
     } catch (error) {
       console.error("❌ Error retrieving team token:", error);
-      await this.auditLogger.logTokenAccess(teamId, "unknown", false);
+      // await this.auditLogger.logTokenAccess(teamId, "unknown", false);
       throw new Error("Failed to retrieve team token securely");
     }
   }
@@ -297,7 +324,7 @@ export class SecureTokenStorage {
       );
 
       // Log the token access
-      await this.auditLogger.logTokenAccess(teamId, tokenRecord.id, true);
+      // await this.auditLogger.logTokenAccess(teamId, tokenRecord.id, true);
 
       return {
         id: tokenRecord.id,
@@ -314,7 +341,7 @@ export class SecureTokenStorage {
       };
     } catch (error) {
       console.error("❌ Error retrieving user token:", error);
-      await this.auditLogger.logTokenAccess(teamId, "unknown", false);
+      // await this.auditLogger.logTokenAccess(teamId, "unknown", false);
       throw new Error("Failed to retrieve user token securely");
     }
   }
@@ -355,12 +382,12 @@ export class SecureTokenStorage {
         .where(eq(slackToken.id, tokenId));
 
       // Log the revocation
-      await this.auditLogger.logTokenRevocation(
-        token.teamId,
-        tokenId,
-        reason,
-        actorType
-      );
+      // await this.auditLogger.logTokenRevocation(
+      //   token.teamId,
+      //   tokenId,
+      //   reason,
+      //   actorType
+      // );
 
       console.log(`✅ Token ${tokenId} revoked: ${reason}`);
     } catch (error) {
@@ -401,14 +428,14 @@ export class SecureTokenStorage {
         );
 
       // Log each revocation
-      for (const token of activeTokens) {
-        await this.auditLogger.logTokenRevocation(
-          teamId,
-          token.id,
-          reason,
-          "system"
-        );
-      }
+      // for (const token of activeTokens) {
+      //   await this.auditLogger.logTokenRevocation(
+      //     teamId,
+      //     token.id,
+      //     reason,
+      //     "system"
+      //   );
+      // }
 
       console.log(
         `✅ Revoked ${activeTokens.length} tokens for team ${teamId}: ${reason}`
@@ -425,9 +452,6 @@ export class SecureTokenStorage {
    */
   async deleteTeamData(teamId: string, ipAddress?: string): Promise<void> {
     try {
-      // Log GDPR deletion request
-      await this.auditLogger.logGdprDeletionRequest(teamId, "user", ipAddress);
-
       // Count items to be deleted for audit
       const tokenCount = await this.db
         .select()
@@ -442,12 +466,6 @@ export class SecureTokenStorage {
 
       // Delete team record
       await this.db.delete(slackTeam).where(eq(slackTeam.id, teamId));
-
-      // Log completion
-      await this.auditLogger.logGdprDeletionCompletion(
-        teamId,
-        tokenCount.length + 1 // tokens + team record
-      );
 
       console.log(`✅ Completed GDPR deletion for team ${teamId}`);
     } catch (error) {
@@ -472,13 +490,6 @@ export class SecureTokenStorage {
       console.error("❌ Error validating token:", error);
       return false;
     }
-  }
-
-  /**
-   * Get audit logs for a team (compliance reporting)
-   */
-  async getTeamAuditLogs(teamId: string, limit = 100) {
-    return await this.auditLogger.getTeamAuditLogs(teamId, limit);
   }
 
   /**

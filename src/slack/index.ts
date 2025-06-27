@@ -98,6 +98,7 @@ export const slackRouter = new Hono<{
     await next();
   })
   // Slack OAuth initiation - now integrates with better-auth session
+  // Slack OAuth initiation - now integrates with better-auth session
   .get("/oauth/start", async (c) => {
     const { SLACK_CLIENT_ID, BETTER_AUTH_URL } = c.env;
 
@@ -317,19 +318,24 @@ export const slackRouter = new Hono<{
         return c.json({ error: "No active tokens found for team" }, 404);
       }
 
-      const token = tokens[0];
-      const decryptedToken = await decrypt(token.accessToken, c.env.SECRET);
+      // Use the secure token storage to get the decrypted token
+      const secureStorage = new SecureTokenStorage(db(c.env), c.env.SECRET);
+      const tokenData = await secureStorage.getTeamBotToken(team.id);
+
+      if (!tokenData) {
+        return c.json({ error: "No valid token found for team" }, 404);
+      }
 
       // Debug: Log token details
       console.log("🔍 Token debug info:", {
-        tokenType: token.tokenType,
-        scope: token.scope,
-        botUserId: token.botUserId,
-        tokenPrefix: decryptedToken?.substring(0, 5) + "...",
-        tokenLength: decryptedToken?.length,
+        tokenType: tokenData.tokenType,
+        scope: tokenData.scope,
+        botUserId: tokenData.botUserId,
+        tokenPrefix: tokenData.decryptedToken?.substring(0, 5) + "...",
+        tokenLength: tokenData.decryptedToken?.length,
       });
 
-      const slackClient = new SlackApiClient(decryptedToken);
+      const slackClient = new SlackApiClient(tokenData.decryptedToken);
 
       // Skip auth test for now due to xoxe token format issues
       // TODO: Investigate xoxe token format compatibility
@@ -338,12 +344,12 @@ export const slackRouter = new Hono<{
       return c.json({
         status: "authenticated",
         team: team.name,
-        user: `Bot User (${token.botUserId})`,
+        user: `Bot User (${tokenData.botUserId})`,
         teamName: team.name,
         tokenInfo: {
-          type: token.tokenType,
-          scopes: token.scope?.split(",") || [],
-          botUserId: token.botUserId,
+          type: tokenData.tokenType,
+          scopes: tokenData.scope?.split(",") || [],
+          botUserId: tokenData.botUserId,
         },
       });
     } catch (error) {
@@ -603,10 +609,19 @@ async function storeSlackCredentials(
     const dbClient = db(env);
     const secureStorage = new SecureTokenStorage(dbClient, encryptionSecret);
 
-    // Get client IP for audit logging
-    const ipAddress = env.CF_CONNECTING_IP || env.X_FORWARDED_FOR || undefined;
+    // Get client IP for audit logging (from headers, not env)
+    const ipAddress = undefined; // Will be handled by middleware if needed
 
-    await secureStorage.storeOAuthData(oauthResponse, ipAddress);
+    // Ensure authed_user.scope has a default value to match interface requirements
+    const normalizedOAuthResponse = {
+      ...oauthResponse,
+      authed_user: {
+        ...oauthResponse.authed_user,
+        scope: oauthResponse.authed_user.scope || "",
+      },
+    };
+
+    await secureStorage.storeOAuthData(normalizedOAuthResponse, ipAddress);
 
     console.log(
       `✅ Securely stored credentials for team: ${oauthResponse.team.name}`
@@ -953,13 +968,17 @@ async function getWorkspaceStatus(teamId: string, env: Env) {
 
     if (activeTokens.length > 0) {
       try {
-        const decryptedToken = await decrypt(
-          activeTokens[0].accessToken,
-          env.SECRET
-        );
-        const slackClient = new SlackApiClient(decryptedToken);
-        lastAuthTest = await slackClient.testAuth();
-        tokenHealth = "healthy";
+        // Use the new secure token storage for token retrieval
+        const secureStorage = new SecureTokenStorage(dbClient, env.SECRET);
+        const tokenData = await secureStorage.getTeamBotToken(teamId);
+
+        if (tokenData) {
+          const slackClient = new SlackApiClient(tokenData.decryptedToken);
+          lastAuthTest = await slackClient.testAuth();
+          tokenHealth = "healthy";
+        } else {
+          tokenHealth = "no_tokens";
+        }
       } catch (authError) {
         tokenHealth = "invalid";
         console.log(`Token health check failed for team ${teamId}:`, authError);

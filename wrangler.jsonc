@@ -13,17 +13,17 @@
   "d1_databases": [
     {
       "binding": "USERS_DATABASE",
-      "database_name": "supermemory-slack",
-      "database_id": "05a34dd0-b2df-40e1-9e3f-daec23f471d9",
-      "preview_database_id": "05a34dd0-b2df-40e1-9e3f-daec23f471d9",
+      "database_name": "supermemory-slack-db",
+      "database_id": "b9226823-7f49-4585-ab79-63351989c15c",
+      "preview_database_id": "b9226823-7f49-4585-ab79-63351989c15c",
       "migrations_dir": "drizzle"
     }
   ],
   "kv_namespaces": [
     {
       "binding": "STATE_STORE",
-      "id": "placeholder_kv_id",
-      "preview_id": "placeholder_kv_id"
+      "id": "720135006e7a4e8bb2ab194276907fa6",
+      "preview_id": "720135006e7a4e8bb2ab194276907fa6"
     }
   ],
   "vars": {
@@ -41,15 +41,45 @@
   "env": {
     "production": {
       "vars": {
-        "BETTER_AUTH_URL": "https://slack.supermemory.ai",
-        "NODE_ENV": "production"
-      }
+        "BETTER_AUTH_URL": "https://supermemory-slack-connector-production.vishkrish200.workers.dev",
+        "NODE_ENV": "production",
+        "SUPERMEMORY_API_URL": "https://api.supermemory.ai"
+      },
+      "kv_namespaces": [
+        {
+          "binding": "STATE_STORE",
+          "id": "720135006e7a4e8bb2ab194276907fa6"
+        }
+      ],
+      "d1_databases": [
+        {
+          "binding": "USERS_DATABASE",
+          "database_name": "supermemory-slack-db",
+          "database_id": "b9226823-7f49-4585-ab79-63351989c15c",
+          "migrations_dir": "drizzle"
+        }
+      ]
     },
     "staging": {
       "vars": {
-        "BETTER_AUTH_URL": "https://slack-staging.supermemory.ai",
-        "NODE_ENV": "staging"
-      }
+        "BETTER_AUTH_URL": "https://supermemory-slack-connector-production.vishkrish200.workers.dev",
+        "NODE_ENV": "staging",
+        "SUPERMEMORY_API_URL": "https://api.supermemory.ai"
+      },
+      "kv_namespaces": [
+        {
+          "binding": "STATE_STORE",
+          "id": "720135006e7a4e8bb2ab194276907fa6"
+        }
+      ],
+      "d1_databases": [
+        {
+          "binding": "USERS_DATABASE",
+          "database_name": "supermemory-slack-db",
+          "database_id": "b9226823-7f49-4585-ab79-63351989c15c",
+          "migrations_dir": "drizzle"
+        }
+      ]
     }
   }
 }

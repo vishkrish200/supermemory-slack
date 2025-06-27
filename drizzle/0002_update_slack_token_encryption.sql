@@ -13,7 +13,7 @@ CREATE TABLE `securityAuditLog` (
 	`createdAt` integer NOT NULL
 );
 --> statement-breakpoint
-ALTER TABLE `slackToken` ADD `encryptedToken` text NOT NULL;--> statement-breakpoint
+ALTER TABLE `slackToken` ADD `encryptedToken` text DEFAULT '' NOT NULL;--> statement-breakpoint
 ALTER TABLE `slackToken` ADD `encryptionAlgorithm` text DEFAULT 'AES-GCM-256' NOT NULL;--> statement-breakpoint
 ALTER TABLE `slackToken` ADD `keyId` text DEFAULT 'default' NOT NULL;--> statement-breakpoint
 ALTER TABLE `slackToken` ADD `revokedAt` integer;--> statement-breakpoint
